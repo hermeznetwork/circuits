@@ -1,0 +1,39 @@
+{
+  "name": "@hermeznetwork/circuits",
+  "version": "0.0.1",
+  "description": "zkSNARK circuit implementing hermez protocol",
+  "scripts": {
+    "setup": "npm i",
+    "eslint": "npx eslint test/**",
+    "test": "npx mocha --max-old-space-size=4096 ./test/*.test.js && npx mocha ./test/lib/*.test.js"
+  },
+  "keywords": [
+    "hermez",
+    "rollup",
+    "blockchain",
+    "scalability",
+    "ethereum",
+    "zksnarks",
+    "zero",
+    "knowledge",
+    "circom"
+  ],
+  "author": "HermezDAO",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@hermeznetwork/commonjs": "0.0.2",
+    "circom": "^0.5.27",
+    "circom_runtime": "^0.1.5",
+    "circomlib": "^0.2.4",
+    "ffiasm": "^0.1.1",
+    "ffjavascript": "^0.2.10",
+    "snarkjs": "^0.3.23",
+    "web3-utils": "^1.2.11"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^7.6.0",
+    "eslint-plugin-mocha": "^8.0.0",
+    "mocha": "^8.1.1"
+  }
+}
