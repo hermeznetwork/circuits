@@ -9,7 +9,7 @@ const Scalar = require("ffjavascript").Scalar;
 const buildZqField = require("ffiasm").buildZqField;
 
 const SMTMemDB = require("circomlib").SMTMemDB;
-const RollupDb = require("../../../index").common.RollupDB;
+const RollupDb = require("@hermeznetwork/commonjs").RollupDB;
 
 // Define name-files
 const circuitName = "circuit";

@@ -3,8 +3,8 @@ const Scalar = require("ffjavascript").Scalar;
 const SMTMemDB = require("circomlib").SMTMemDB;
 const { stringifyBigInts } = require("ffjavascript").utils;
 
-const RollupDB = require("../../index").common.RollupDB;
-const Account = require("../../index").common.HermezAccount;
+const RollupDB = require("@hermeznetwork/commonjs").RollupDB;
+const Account = require("@hermeznetwork/commonjs").HermezAccount;
 const utils = require("./helpers/gen-inputs-utils");
 
 

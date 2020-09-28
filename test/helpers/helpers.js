@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const Scalar = require("ffjavascript").Scalar;
 
-const { float16 } = require("../../../index").common;
-const feeUtils = require("../../../common/index").feeTable;
-const txUtils = require("../../../common/index").txUtils;
+const { float16 } = require("@hermeznetwork/commonjs");
+const feeUtils = require("@hermeznetwork/commonjs").feeTable;
+const txUtils = require("@hermeznetwork/commonjs").txUtils;
 
 async function depositTx(bb, account, tokenID, loadAmount) {
     bb.addTx({

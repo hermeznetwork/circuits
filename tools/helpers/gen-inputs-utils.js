@@ -1,7 +1,7 @@
 const Scalar = require("ffjavascript").Scalar;
 
-const float16 = require("../../../index").common.float16;
-const utilsFee = require("../../../index").common.feeTable;
+const float16 = require("@hermeznetwork/commonjs").float16;
+const utilsFee = require("@hermeznetwork/commonjs").feeTable;
 
 function randomInterval(min, max) {
     const randMul = Math.floor(Math.random() * 100);
