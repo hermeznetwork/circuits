@@ -8,6 +8,7 @@ const SMTMemDB = require("circomlib").SMTMemDB;
 const RollupDB = require("@hermeznetwork/commonjs").RollupDB;
 const Account = require("@hermeznetwork/commonjs").HermezAccount;
 const Constants = require("@hermeznetwork/commonjs").Constants;
+const float16 = require("@hermeznetwork/commonjs").float16;
 
 const { depositTx, getSingleTxInput, assertTxs } = require("./helpers/helpers");
 
@@ -319,7 +320,16 @@ describe("Test rollup-tx", function () {
 
         const bb = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
         depositTx(bb, account1, 1, 1000);
-        depositTx(bb, account2, 1, 2000);
+        // simulate L1 coordinator create Bjj account
+        bb.addTx({
+            fromIdx: 0,
+            loadAmountF: float16.fix2Float(1000),
+            tokenID: 1,
+            fromBjjCompressed: account2.bjjCompressed,
+            fromEthAddr: Constants.nullEthAddr,
+            toIdx: 0,
+            onChain: true
+        });
         await bb.build();
         await rollupDB.consolidate(bb);
 
