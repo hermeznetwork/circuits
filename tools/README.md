@@ -13,7 +13,7 @@ This tool is intended to be used for:
 - compute witness
 
 General command line:
-  - `node cli.js "actions" "nTx" "nLevels" "maxL1Tx" "maxFeeTx"`
+  - `node build-circuit.js "actions" "nTx" "nLevels" "maxL1Tx" "maxFeeTx"`
 
 ## Commands
 
@@ -23,14 +23,14 @@ General command line:
   - circuit: `circuit-nTx-nLevels-maxL1Tx-maxFeeTx`
 
 Example command: 
-  - `node cli.js create 256 32 128 64`
+  - `node build-circuit.js create 256 32 128 64`
 
 ### Compile circuit
 - Compiles rollup circuit and store it into above folder:
   - `circuit-nTx-nLevels-maxL1Tx-maxFeeTx.r1cs`: circuit compiled
   - `circuit-nTx-nLevels-maxL1Tx-maxFeeTx.cpp`: calculate witness cpp
 
-- Parameter added to choose components parallelization `RollupTx|DecodeTx`
+- Parameter added to choose components parallelization `RollupTx|DecodeTx|FeeTx`
   - Default value: not parellelize 
 
 Example command: 
@@ -40,19 +40,19 @@ Example command:
 - Creates and stores an empty input for circuit
 
 Example command:
-  - `node cli.js input 256 32 128 64`
+  - `node build-circuit.js input 256 32 128 64`
 
 ### Compile witness
 - compile cpp witness
 
 Example command:
-  - `node cli.js compilewitness 256 32 128 64`
+  - `node build-circuit.js compilewitness 256 32 128 64`
 
 ### Compute witness
 - computes witness given an input for the circuit
 
 Example command:
-  - `node cli.js witness 256 32 128 64`
+  - `node build-circuit.js witness 256 32 128 64`
 
 # Estimate constraints
 It computes the constraints for `rollup-main` circuit taking into account its parameters `nTx`, `nLevels`, `maxL1Tx` and `maxFeeTx`.

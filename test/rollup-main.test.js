@@ -8,6 +8,7 @@ const RollupDB = require("@hermeznetwork/commonjs").RollupDB;
 const Account = require("@hermeznetwork/commonjs").HermezAccount;
 const Constants = require("@hermeznetwork/commonjs").Constants;
 const txUtils = require("@hermeznetwork/commonjs").txUtils;
+const float16 = require("@hermeznetwork/commonjs").float16;
 
 const { depositTx, assertBatch, assertAccountsBalances } = require("./helpers/helpers");
 
@@ -53,7 +54,7 @@ describe("Test rollup-main", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_18794FwpyfK2QkzEA";
+        // const pathTmp = "/tmp/circom_24613mPpsFOogVx4n";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main.test.circom"));
     });
 
@@ -397,7 +398,16 @@ describe("Test rollup-main", function () {
 
         const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
         await depositTx(bb, account1, 1, 1000);
-        await depositTx(bb, account2, 1, 1000);
+        // simulate L1 coordinator create Bjj account
+        bb.addTx({
+            fromIdx: 0,
+            loadAmountF: float16.fix2Float(1000),
+            tokenID: 1,
+            fromBjjCompressed: account2.bjjCompressed,
+            fromEthAddr: Constants.nullEthAddr,
+            toIdx: 0,
+            onChain: true
+        });
         await bb.build();
 
         await rollupDB.consolidate(bb);
@@ -407,9 +417,9 @@ describe("Test rollup-main", function () {
         await depositTx(bb2, account3, 1, 0);
 
         const tx = {
-            fromIdx: account1.idx,
+            fromIdx: account2.idx,
             toIdx: Constants.nullIdx,
-            toEthAddr: account2.ethAddr,
+            toEthAddr: account1.ethAddr,
             tokenID: 1,
             amount: 500,
             nonce: 0,
@@ -424,11 +434,11 @@ describe("Test rollup-main", function () {
             toBjjSign: account2.sign,
             tokenID: 1,
             amount: 100,
-            nonce: 1,
+            nonce: 0,
             userFee: 0,
         };
 
-        account1.signTx(tx);
+        account2.signTx(tx);
         account1.signTx(tx2);
         bb2.addTx(tx);
         bb2.addTx(tx2);
@@ -441,7 +451,7 @@ describe("Test rollup-main", function () {
         await rollupDB.consolidate(bb2);
 
         await assertBatch(bb2, circuit);
-        await assertAccountsBalances(accounts, [26, 1600, 374], rollupDB);
+        await assertAccountsBalances(accounts, [1400, 226, 374], rollupDB);
     });
 
     it("Should check error L2 'transfer' with rqOffset txs", async () => {

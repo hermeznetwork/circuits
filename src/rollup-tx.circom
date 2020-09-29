@@ -167,7 +167,7 @@ template RollupTx(nLevels, maxFeeTx) {
     component checkToEthAddr = ForceEqualIfEnabled();
     checkToEthAddr.in[0] <== toEthAddr;
     checkToEthAddr.in[1] <== ethAddr2;
-    checkToEthAddr.enabled <== states.checkToEthAddr;
+    checkToEthAddr.enabled <== 1 - (1 - states.checkToEthAddr)*(1 - states.checkToBjj);
 
     // recipient toBjj
     ////////
