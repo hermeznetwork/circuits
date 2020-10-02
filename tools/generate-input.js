@@ -4,7 +4,7 @@ const SMTMemDB = require("circomlib").SMTMemDB;
 const { stringifyBigInts } = require("ffjavascript").utils;
 
 const RollupDB = require("@hermeznetwork/commonjs").RollupDB;
-const Account = require("@hermeznetwork/commonjs").HermezAccount;
+const Account = require("@hermeznetwork/commonjs").HermezAccount
 const utils = require("./helpers/gen-inputs-utils");
 
 
@@ -28,12 +28,24 @@ if (paramTranfers === undefined){
 }
 const nTransfers = Number(paramTranfers);
 
+// optional params
+// argv[4] : nTx
+// argv[5] : nLevels
+// argv[6] : maxL1Tx
+// argv[7] : maxFeeTx
+
+const paramNTx      = Number(process.argv[4]);
+const paramNLevels  = Number(process.argv[5]);
+const paramMaxL1Tx  = Number(process.argv[6]);
+const paramMaxFeeTx = Number(process.argv[7]);
+
 // global vars
 ////////
-const nTx = 2048;
-const nLevels = 32;
-const maxL1Tx = 256;
-const maxFeeTx = 64;
+const nTx      = paramNTx      == undefined ? 32 : paramNTx;
+const nLevels  = paramNLevels  == undefined ? 8  : paramNLevels;
+const maxL1Tx  = paramMaxL1Tx  == undefined ? 8  : paramMaxL1Tx;
+const maxFeeTx = paramMaxFeeTx == undefined ? 64 : paramMaxFeeTx;
+
 const minBalance = Scalar.e(0);
 const maxBalance = Scalar.sub(Scalar.shl(1, 128), 1);
 const numBatches = Math.ceil(nAccounts / maxL1Tx);

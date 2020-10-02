@@ -145,6 +145,66 @@ async function computeWitness(nTx, nLevels, maxL1Tx, maxFeeTx){
     console.log("Witness example calculated");
 }
 
+async function computeZkey(nTx, nLevels, maxL1Tx, maxFeeTx, ptauFile){
+    const pathName = path.join(__dirname, `../rollup-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}`);
+    const r1csName = `${circuitName}-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}.r1cs`;
+    const zkeyName = `${circuitName}-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}.zkey`;
+    const ptauName = ptauFile == undefined ? 
+		         "/home/tester/contracts-circuits/pot23_final.ptau" : 
+		         ptauFile;
+    const ptauProvided = ptauFile == undefined ? 0 : 1;
+
+    if (!fs.existsSync(path.join(pathName, r1csName))) {
+        console.error(`Constraint file ${path.join(pathName,r1csName)} doesnt exist`);
+        return;
+    }
+
+    if (!fs.existsSync(ptauName)) {
+        console.error(`Powers of Tau file ${ptauName} doesnt exist`);
+        return;
+    }
+
+    console.log(`Powers of Tau file: ${ptauName}`);
+
+    let zkeyCmd = `cd ${pathName} && \
+    npx \
+    --max-old-space-size=2048000 \
+    --initial-old-space-size=2048000 \
+    --no-global-gc-scheduling \
+    --no-incremental-marking \
+    --max-semi-space-size=1024 \
+    --initial-heap-size=2048000 \
+    ../../node_modules/snarkjs/cli.js zkey new \
+    ${r1csName} \
+    ${ptauName} \
+    ${pathName,zkeyName}`;
+
+    out = process.exec(zkeyCmd);
+    out.stdout.on("data", (data) => {
+                console.log(data);
+           });
+}
+
+async function generateSolidityVerifier(nTx, nLevels, maxL1Tx, maxFeeTx){
+    const pathName = path.join(__dirname, `../rollup-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}`);
+    const zkeyName = `${circuitName}-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}.zkey`;
+    const solName = `${circuitName}-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}_verifier.sol`;
+
+    if (!fs.existsSync(path.join(pathName, zkeyName))) {
+        console.log(`ZKey file ${path.join(pathName,zkeyName)} doesnt exist`);
+	return;
+    }
+
+    const cmd = `snarkjs zkey export solidityverifier \
+       ${path.join(pathName, zkeyName)} \
+       ${path.join(pathName, solName)}`;
+
+    const out = process.exec(cmd);
+    out.stdout.on("data", (data) => {
+        console.log(data);
+    });
+}
+
 async function compileFr(pathC, platform){
 
     const p = Scalar.fromString("21888242871839275222246405745257275088548364400416034343698204186575808495617");
@@ -176,5 +236,7 @@ module.exports = {
     compileCircuit,
     inputs,
     compileWitness,
-    computeWitness
+    computeWitness,
+    computeZkey,
+    generateSolidityVerifier
 };
