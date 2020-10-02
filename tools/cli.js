@@ -23,6 +23,11 @@ checkParam(nLevels, "number of levels");
 checkParam(maxL1Tx, "maximum L1 tx");
 checkParam(maxFeeTx, "number of fee tx");
 
+// Circuits with nLevel < 16 is not enought to have a firstIdx of 255
+if (nLevels < 16){
+   console.log("WARNING: Circuit should have a minimum of 16 levels to be compatible with constant firstIdx=255. Proceed at your own risk")
+}
+
 // compile circuit
 if (command == "create"){
     createCircuit(nTx, nLevels, maxL1Tx, maxFeeTx);
