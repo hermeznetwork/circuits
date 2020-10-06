@@ -30,7 +30,7 @@ Example command:
   - `circuit-nTx-nLevels-maxL1Tx-maxFeeTx.r1cs`: circuit compiled
   - `circuit-nTx-nLevels-maxL1Tx-maxFeeTx.cpp`: calculate witness cpp
 
-- Parameter added to choose components parallelization `RollupTx|DecodeTx`
+- Parameter added to choose components parallelization `RollupTx|DecodeTx|FeeTx`
   - Default value: not parellelize 
 
 Example command: 
