@@ -13,7 +13,7 @@ This tool is intended to be used for:
 - compute witness
 
 General command line:
-  - `node cli.js "actions" "nTx" "nLevels" "maxL1Tx" "maxFeeTx"`
+  - `node build-circuit.js "actions" "nTx" "nLevels" "maxL1Tx" "maxFeeTx"`
 
 ## Commands
 
@@ -23,7 +23,7 @@ General command line:
   - circuit: `circuit-nTx-nLevels-maxL1Tx-maxFeeTx`
 
 Example command: 
-  - `node cli.js create 256 32 128 64`
+  - `node build-circuit.js create 256 32 128 64`
 
 ### Compile circuit
 - Compiles rollup circuit and store it into above folder:
@@ -34,38 +34,38 @@ Example command:
   - Default value: not parellelize 
 
 Example command: 
-  - `node cli.js compile 256 32 128 64 1`
+  - `node build-circuit.js compile 256 32 128 64 1`
 
 ### Inputs
 - Creates and stores an empty input for circuit
 
 Example command:
-  - `node cli.js input 256 32 128 64`
+  - `node build-circuit.js input 256 32 128 64`
 
 ### Compile witness
 - compile cpp witness
 
 Example command:
-  - `node cli.js compilewitness 256 32 128 64`
+  - `node build-circuit.js compilewitness 256 32 128 64`
 
 ### Compute witness
 - computes witness given an input for the circuit
 
 Example command:
-  - `node cli.js witness 256 32 128 64`
+  - `node build-circuit.js witness 256 32 128 64`
 
 ### Compute zkey 
 - computes zkey file given an a constraint (.r1cs) and a power of taw (ptau) file.
 
 Example command:
-  - `node cli.js zkey 256 32 128 64` uses ptau file stored at GPU Server (tester@135.255.190.114:/contract-circuits/pot23_final.ptau). Requires to be working in GPU server.
-  - `node cli.js zkey 256 32 128 64 pot10_final.ptau` uses ptau file stored in the circuits folder. Note that you need to pass the absolute path of ptau file
+  - `node build-circuit.js zkey 256 32 128 64` uses ptau file stored at GPU Server (tester@135.255.190.114:/contract-circuits/pot23_final.ptau). Requires to be working in GPU server.
+  - `node build-circuit.js zkey 256 32 128 64 pot10_final.ptau` uses ptau file stored in the circuits folder. Note that you need to pass the absolute path of ptau file
 
 ### Compute solidity verifier
 - computes solidity verifier for given zkey file
 
 Example command:
-  - `node cli.js solidity 256 32 128 64`
+  - `node build-circuit.js solidity 256 32 128 64`
 
 # Estimate constraints
 It computes the constraints for `rollup-main` circuit taking into account its parameters `nTx`, `nLevels`, `maxL1Tx` and `maxFeeTx`.
