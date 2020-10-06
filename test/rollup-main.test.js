@@ -54,7 +54,7 @@ describe("Test rollup-main", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_19007MJlYHTNSFBQL";
+        // const pathTmp = "/tmp/circom_7821w6GhYUoZ1oRp";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main.test.circom"));
     });
 
@@ -69,6 +69,25 @@ describe("Test rollup-main", function () {
         await bb.build();
 
         await assertBatch(bb, circuit);
+    });
+
+    it("Should check L1 'createAccount'", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 0);
+        await depositTx(bb, account2, 2, 0);
+        await bb.build();
+        await rollupDB.consolidate(bb);
+        await assertBatch(bb, circuit);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb2, account3, 1, 0);
+        await bb2.build();
+        await rollupDB.consolidate(bb2);
+        await assertBatch(bb2, circuit);
+
+        await assertAccountsBalances(accounts, [0, 0, 0], rollupDB);
     });
 
     it("Should check L1 'createAccountDeposit' & L1 'deposit' txs", async () => {
