@@ -53,7 +53,7 @@ describe("Test rollup-main L1 transactions", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_14891inF5fgK2v9eP";
+        // const pathTmp = "/tmp/circom_23131gdaXATTBRDyD";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main-L1.test.circom"));
     });
 
@@ -67,15 +67,17 @@ describe("Test rollup-main L1 transactions", function () {
 
     // |     **Transaction type**     | toIdx | tokenID |  amountF   | loadAmountF | fromIdx | fromBjj-compressed | fromEthAddr |
     // |:----------------------------:|:-----:|:-------:|:----------:|:-----------:|:-------:|:------------------:|:-----------:|
-    // |     createAccountDeposit     |   0   |  UP,ME  |     0      | UP < 2^128  |    0    |         UP         | msg.sender  |
-    // | createAccountDepositTransfer | UP,ME |  UP,ME  | UP < 2^192 | UP < 2^128  |    0    |         UP         | msg.sender  |
-    // |           deposit            |   0   |  UP,ME  |     0      | UP < 2^128  |  UP,ME  |         0          |      0      |
+    // |        createAccount         |   0   |  UP,ME  |     0      |      0      |    0    |      UP (!=0)      | msg.sender  |
+    // |     createAccountDeposit     |   0   |  UP,ME  |     0      | UP < 2^128  |    0    |      UP (!=0)      | msg.sender  |
+    // | createAccountDepositTransfer | UP,ME |  UP,ME  | UP < 2^192 | UP < 2^128  |    0    |      UP (!=0)      | msg.sender  |
+    // |           deposit            |   0   |  UP,ME  |     0      | UP < 2^128  |  UP,ME  |         0          | msg.sender  |
     // |       depositTransfer        | UP,ME |  UP,ME  | UP < 2^192 | UP < 2^128  |  UP,ME  |         0          | msg.sender  |
     // |        forceTransfer         | UP,ME |  UP,ME  | UP < 2^192 |      0      |  UP,ME  |         0          | msg.sender  |
     // |          forceExit           |   1   |  UP,ME  | UP < 2^192 |      0      |  UP,ME  |         0          | msg.sender  |
 
     // |     **Transaction type**     | newAccount | isLoadAmount | isAmount | checkEthAddr | checkTokenID1 |  checkTokenID2   | *nullifyLoadAmount* | *nullifyAmount* |
     // |:----------------------------:|:----------:|:------------:|:--------:|:------------:|:-------------:|:----------------:|:-------------------:|:---------------:|
+    // |         createAccount        |     1      |      0       |    0     |      0       |       0       |        0         |          0          |        0        |
     // |     createAccountDeposit     |     1      |      1       |    0     |      0       |       0       |        0         |          0          |        0        |
     // | createAccountDepositTransfer |     1      |      1       |    1     |      0       |       0       |        1         |          0          |        1        |
     // |           deposit            |     0      |      1       |    0     |      0       |       1       |        0         |          1          |        0        |
@@ -83,40 +85,30 @@ describe("Test rollup-main L1 transactions", function () {
     // |        forceTransfer         |     0      |      0       |    1     |      1       |       1       |        1         |          0          |        1        |
     // |          forceExit           |     0      |      0       |    1     |      1       |       1       | 1 if newExit = 0 |          0          |        1        |
 
-    it("Should process L1 'createAccountDeposit' txs edge cases", async () => {
+    it("Should process L1 'createAccount' txs edge cases", async () => {
         const rollupDB = await newState();
 
         // standard transaction
         const tx = {
             fromIdx: 0,
-            loadAmountF: float16.fix2Float(100),
+            loadAmountF: 0,
             tokenID: 1,
+            amountF: 0,
             fromBjjCompressed: account1.bjjCompressed,
             fromEthAddr: account1.ethAddr,
             toIdx: 0,
             onChain: true,
         };
 
-        // fromBjjParam
+        // fromBjj param
         let bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
 
         // invalid Bjj
-        const tx1 = {
-            fromIdx: 0,
-            loadAmountF: float16.fix2Float(100),
-            tokenID: 1,
-            fromBjjCompressed: "0x0123456",
-            fromEthAddr: account1.ethAddr,
-            toIdx: 0,
-            onChain: true,
-        };
+        const tx1 = Object.assign({}, tx);
+        tx1.fromBjjCompressed = "0x12345";
 
-        // 0 Bjj
-        const tx2 = Object.assign({}, tx);
-        tx2.fromBjjCompressed = "0x0";
-
+        bb.addTx(tx);
         bb.addTx(tx1);
-        bb.addTx(tx2);
         await bb.build();
         await assertBatch(bb, circuit);
 
@@ -127,17 +119,38 @@ describe("Test rollup-main L1 transactions", function () {
         bb.addTx(tx3);
         await bb.build();
         await assertBatch(bb, circuit);
+    });
 
-        // 0 and 0xff.ff loadAmountF
-        bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
-        const tx4 = Object.assign({}, tx);
-        tx4.loadAmountF = 0;
 
-        const tx5 = Object.assign({}, tx);
-        tx5.loadAmountF = 0xFFFF;
+    it("Should process L1 'createAccountDeposit' txs edge cases", async () => {
+        const rollupDB = await newState();
 
-        bb.addTx(tx4);
-        bb.addTx(tx5);
+        // standard transaction
+        const tx = {
+            fromIdx: 0,
+            loadAmountF: float16.fix2Float(100),
+            amountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: account1.bjjCompressed,
+            fromEthAddr: account1.ethAddr,
+            toIdx: 0,
+            onChain: true,
+        };
+
+        // fromBjj edge cases has been tested in `createAccount`
+
+        // loadAmountF
+        let bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        // 0 and 0xffff loadAmountF
+        const tx1 = Object.assign({}, tx);
+        tx1.loadAmountF = 0;
+
+        const tx2 = Object.assign({}, tx);
+        tx2.loadAmountF = 0xFFFF;
+
+        bb.addTx(tx1);
+        bb.addTx(tx2);
         await bb.build();
         await assertBatch(bb, circuit);
     });
@@ -164,26 +177,29 @@ describe("Test rollup-main L1 transactions", function () {
             onChain: true
         };
 
-        // 0 and 0xff..ff amountF
+        // fromBjj edge cases has been tested in `createAccount`
+        // loadAmountF edge cases has been tested in `createAccountDeposit`
+
+        // 0 and 0xffff amountF
         bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
 
         const tx1 = Object.assign({}, tx);
         tx1.amountF = 0;
 
         const tx2 = Object.assign({}, tx);
-        tx2.amountF = 0xFFFF; // not enough funds in sender. Transfer with 0 amount.
+        tx2.amountF = 0xFFFF; // not enough funds in sender. Nullify amount transfer.
 
         bb.addTx(tx1);
         bb.addTx(tx2);
         await bb.build();
         await assertBatch(bb, circuit);
 
-        // 0xFF..FF on with amountF and loadAmountF
+        // 0xffff on with amountF and loadAmountF
         bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
 
         const tx3 = Object.assign({}, tx);
         tx3.loadAmountF = 0xFFFF;
-        tx3.amountF = 0xFFFF; // funds in sender. Transfer with all loadAmount.
+        tx3.amountF = 0xFFFF; // enough funds in sender. Transfer with all loadAmount.
 
         bb.addTx(tx3);
         await bb.build();
@@ -218,9 +234,9 @@ describe("Test rollup-main L1 transactions", function () {
             loadAmountF: 500,
             tokenID: 1,
             fromBjjCompressed: 0,
-            fromEthAddr: 0,
+            fromEthAddr: account1.ethAddr,
             toIdx: 0,
-            amount: 0,
+            amountF: 0,
             userFee: 0,
             onChain: true
         };
@@ -233,6 +249,26 @@ describe("Test rollup-main L1 transactions", function () {
         tx1.tokenID = 2;
 
         bb.addTx(tx1);
+        await bb.build();
+        await assertBatch(bb, circuit);
+
+        // random msg.sender
+        bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx2 = Object.assign({}, tx);
+        tx2.fromEthAddr = "0xD8Af0C5c6dEE7dCe32E59577675C026e1aDe4De5";
+
+        bb.addTx(tx2);
+        await bb.build();
+        await assertBatch(bb, circuit);
+
+        // loadAmountF = 0
+        bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx3 = Object.assign({}, tx);
+        tx3.loadAmountF = 0;
+
+        bb.addTx(tx3);
         await bb.build();
         await assertBatch(bb, circuit);
     });
@@ -292,7 +328,7 @@ describe("Test rollup-main L1 transactions", function () {
 
         // fromEthAddr does not match fromIdx ethAddr
         // could not perform any transaction on fromIdx behalf ==> nullify amount
-        // nullify amount
+        // action: nullify amount
         bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
         const tx3 = Object.assign({}, tx);
         tx3.fromEthAddr = account3.ethAddr;

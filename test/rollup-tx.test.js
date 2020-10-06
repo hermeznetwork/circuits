@@ -62,6 +62,16 @@ describe("Test rollup-tx", function () {
         await assertTxs(bb, circuit);
     });
 
+    it("Should check L1 'createAccount' tx", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+        depositTx(bb, account1, 1, 0);
+        await bb.build();
+
+        await assertTxs(bb, circuit);
+    });
+
     it("Should check L1 'createAccountDeposit' tx", async () => {
         const rollupDB = await newState();
 
