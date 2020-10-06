@@ -116,6 +116,22 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     component rollupTx[nTx];
     component feeTx[maxFeeTx];
 
+    // check binary signals
+    ////////
+    for (i = 0; i < nTx-1; i++){
+        imOnChain[i] * (imOnChain[i] - 1) === 0;
+    }
+
+    for (i = 0; i < nTx; i++){
+        onChain[i] * (onChain[i] - 1) === 0;
+        newAccount[i] * (newAccount[i] - 1) === 0;
+        for(j = 0; j < 256; j++){
+            fromBjjCompressed[i][j] * (fromBjjCompressed[i][j] - 1) === 0;
+        }
+        isOld0_1[i] * (isOld0_1[i] - 1) === 0;
+        isOld0_2[i] * (isOld0_2[i] - 1) === 0;
+    }
+
     // decode tx data
     ////////
     for (i = 0; i < nTx; i++) {
