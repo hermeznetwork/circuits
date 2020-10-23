@@ -6,8 +6,17 @@ include "../node_modules/circomlib/circuits/sha256/sha256.circom";
 include "./lib/hash-state.circom"
 
 /**
- * Verify withdrawal
+ * Verify withdrawal by proving that a leaf exist on the exit tree
  * @param nLevels - merkle tree depth
+ * @input root exit - {Field} - exit tree root
+ * @input ethAddr - {Uint160} - ethereum address
+ * @input tokenID - {Uint32} - token identifier
+ * @input balance - {Uint192} - balance
+ * @input idx - {Uint48} - merkle tree index
+ * @input sign - {Bool} - babyjubjub sign
+ * @input ay - {Field} babyjubjub y coordinate
+ * @input siblingsState[nLevels + 1] - {Array(Field)} - siblings merkle proof
+ * @output hashGlobalInputs - {Field} - hash of all pretended input signals
  */
 template Withdraw(nLevels) {
     // Unique public signal
@@ -24,6 +33,7 @@ template Withdraw(nLevels) {
     signal private input siblingsState[nLevels + 1];
 
     // compute account state hash
+    ////////
     component accountState = HashState();
     accountState.tokenID <== tokenID;
     accountState.nonce <== 0;
@@ -33,6 +43,7 @@ template Withdraw(nLevels) {
     accountState.ethAddr <== ethAddr;
 
     // verify account state is on exit tree root
+    ////////
 	component smtVerify = SMTVerifier(nLevels + 1);
 	smtVerify.enabled <== 1;
 	smtVerify.fnc <== 0;
@@ -46,27 +57,34 @@ template Withdraw(nLevels) {
 	smtVerify.key <== idx;
 	smtVerify.value <== accountState.out;
 
-    // set hash global inputs
+    // compute hash global inputs
+    ////////
     component hasherInputs = HashInputsWithdrawal(nLevels);
-    
+
     hasherInputs.rootExit <== rootExit;
     hasherInputs.ethAddr <== ethAddr;
     hasherInputs.tokenID <== tokenID;
     hasherInputs.balance <== balance;
     hasherInputs.idx <== idx;
 
-    // set output
+    // set public output
     hashGlobalInputs <== hasherInputs.hashInputsOut;
 }
 
 /**
  * Computes the sha256 hash of all pretended public inputs
  * @param nLevels - merkle tree depth
+ * @input rootExit - {Field} - exit root
+ * @input ethAddr - {Uint160} - ethereum address
+ * @input tokenID - {Uint32} - token identifier
+ * @input balance - {Uint192} - balance
+ * @input idx - {Uint48} - merkle tree index
+ * @output hashInputsOut - {Field} - hash inputs signals
  */
 template HashInputsWithdrawal(nLevels){
     // bits for each public input type
     var bitsRootExit = 256;
-    var bitsEthAddr = 160; 
+    var bitsEthAddr = 160;
     var bitsTokenID = 32;
     var bitsBalance = 192;
     var bitsIdx = 48; // MAX_NLEVELS

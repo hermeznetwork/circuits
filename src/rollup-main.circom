@@ -14,8 +14,86 @@ include "./fee-tx.circom";
  * @param nLevels - merkle tree depth
  * @param maxL1Tx - absolute maximum of L1 transaction
  * @param maxFeeTx - absolute maximum of fee transactions
+ * @input oldLastIdx - {Uint48} - old last index assigned
+ * @input oldStateRoot - {Field} - initial state root
+ * @input globalChainID - {Uint16} - global chain identifier
+ * @input feeIdxs[maxFeeTx] - {Array(Uint48)} - merkle tree indexes to receive fees
+ * @input feePlanTokens[maxFeeTx] - {Array(Uint32)} - tokens identifiers of fees accumulated
+ * @input imOnChain[nTx-1] - {Array(Bool)} - intermediary signals: decode transaction output onChain flag
+ * @input imOutIdx[nTx-1] - {Array(Uint40)} - intermediary signals: decode transaction final index assigned
+ * @input imStateRoot[nTx-1] - {Array(Field)} - intermediary signals: transaction final state root
+ * @input imExitRoot[nTx-1] - {Array(Field)} - intermediary signals: transaction final exit root
+ * @input imAccFeeOut[nTx-1][maxFeeTx] - {Array(Uint192)} - intermediary signals: transaction final accumlate fees
+ * @input imStateRootFee[maxFeeTx - 1] - {Array(Field)} - intermediary signals: transaction fee final state root
+ * @input imInitStateRootFee - {Field} - intermediary signals: final state root of all rollup transactions
+ * @input imFinalAccFee[maxFeeTx] - {Array(Field)} - intermediary signals: final fees accumulated of all rollup transactions
+ * @input txCompressedData[nTx] - {Array(Uint241)} - encode transaction fields together
+ * @input txCompressedDataV2[nTx] - {Array(Uint193)} - encode transaction fields together version 2
+ * @input fromIdx[nTx] - {Array(Uint48)} - index sender
+ * @input auxFromIdx[nTx] - {Array(Uint48)} - auxiliary index to create accounts
+ * @input toIdx[nTx] - {Array(Uint48)} - index receiver
+ * @input auxToIdx[nTx] - {Array(Uint48)} - auxiliary index when signed index receiver is set to null
+ * @input toBjjAy[nTx] - {Array(Field)} - bayjubjub y coordinate receiver
+ * @input toEthAddr[nTx] - {Array(Uint160)} - ethereum address receiver
+ * @input onChain[nTx] - {Array(Bool)} - determines if the transacion is L1 or L2
+ * @input newAccount[nTx] - {Array(Bool)} - determines if transaction creates a new account
+ * @input rqTxCompressedDataV2[nTx] - {Array(Uint193)} - requested encode transaction fields together version 2
+ * @input rqToEthAddr[nTx] - {Array(Uint160)} - requested ethereum address receiver
+ * @input rqToBjjAy[nTx] - {Array(Field)} - requested babyjubjub y coordinate
+ * @input s[nTx] - {Array(Field)} - eddsa signature field
+ * @input r8x[nTx] - {Array(Field)} - eddsa signature field
+ * @input r8y[nTx] - {Array(Field)} - eddsa signature field
+ * @input loadAmountF[nTx] - {Array(Uint16)} - amount to deposit from L1 to L2 encoded as float16
+ * @input fromEthAddr[nTx] - {Array(Uint160)} - ethereum address sender
+ * @input fromBjjCompressed[nTx][256] - {Array(Bool)} - babyjubjub compressed sender
+ * @input tokenID1[nTx] - {Array(Uint32)} - tokenID of the sender leaf
+ * @input nonce1[nTx] - {Array(Uint40)} - nonce of the sender leaf
+ * @input sign1[nTx] - {Array(Bool)} - sign of the sender leaf
+ * @input balance1[nTx] - {Array(Uint192)} - balance of the sender leaf
+ * @input ay1[nTx] - {Array(Field)} - ay of the sender leaf
+ * @input ethAddr1[nTx] - {Array(Uint160)} - ethAddr of the sender leaf
+ * @input siblings1[nTx][nLevels + 1] - {Array(Field)} - siblings merkle proof of the sender leaf
+ * @input isOld0_1[nTx] - {Array(Bool)} - flag to require old key - value
+ * @input oldKey1[nTx] - {Array(Uint48)} - old key of the sender leaf
+ * @input oldValue1[nTx] - {Array(Field)} - old value of the sender leaf
+ * @input tokenID2[nTx] - {Array(Uint32)} - tokenID of the receiver leaf
+ * @input nonce2[nTx] - {Array(Uint40)} - nonce of the receiver leaf
+ * @input sign2[nTx] - {Array(Bool)} - sign of the receiver leaf
+ * @input balance2[nTx] - {Array(Uint192)} - balance of the receiver leaf
+ * @input ay2[nTx] - {Array(Field)} - ay of the receiver leaf
+ * @input ethAddr2[nTx] - {Array(Uint160)} - ethAddr of the receiver leaf
+ * @input siblings2[nTx][nLevels + 1] - {Array(Field)} - siblings merkle proof of the receiver leaf
+ * @input isOld0_2[nTx] - {Array(Bool)} - flag to require old key - value
+ * @input oldKey2[nTx] - {Array(Uint48)} - old key of the sender leaf
+ * @input oldValue2[nTx] - {Array(Field)} - old value of the sender leaf
+ * @input tokenID3[maxFeeTx] - {Array(Uint32)} - tokenID of leafs feeIdxs
+ * @input nonce3[maxFeeTx] - {Array(Uint40)} - nonce of leafs feeIdxs
+ * @input sign3[maxFeeTx] - {Array(Bool)} - sign of leafs feeIdxs
+ * @input balance3[maxFeeTx] - {Array(Uint192)} - balance of leafs feeIdxs
+ * @input ay3[maxFeeTx] - {Array(Field)} - ay of leafs feeIdxs
+ * @input ethAddr3[maxFeeTx] - {Array(Uint160)} - ethAddr of leafs feeIdxs
+ * @input siblings3[nLevels + 1] - {Array(Field)} - siblings merkle proof of leafs Idxs
+ * @output hashGlobalInputs - {Field} - hash of all pretended input signals
  */
 template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
+    // Phases rollup-main circuit:
+        // A: check binary signals
+        // B: decode transactions
+        // C: check integrity decode intermediary signals
+        // D: process transactions
+        // E: check integrity transactions intermediary signals
+        // F: process fee transactions
+        // G: check integrity fee transactions intermediary signals
+        // H: compute global hash input
+
+    // Note regarding witness parallelization:
+    // circuit templates included in this main circuit are pretended to be computed in parallel.
+    // meaning that the output of the very first transaction it is not necessary to compute the next transaction.
+    // Then, all transactions could be computed in parallel. In order to achieve that, it is needed to supply intermediate signals to allow modules parallelization.
+    // All signals prefixed with 'im' are intermediary signals.
+    // Note that in circuit phases, there are specific phases to check integrity of intermediary signals.
+    // This adds constraints to the circuit, since it is needed to provided transactions output in advance, but it allows high parallelization at the time to compute the witness
+
     // Unique public signal
     signal output hashGlobalInputs;
 
@@ -116,7 +194,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     component rollupTx[nTx];
     component feeTx[maxFeeTx];
 
-    // check binary signals
+    // A - check binary signals
     ////////
     for (i = 0; i < nTx-1; i++){
         imOnChain[i] * (imOnChain[i] - 1) === 0;
@@ -132,7 +210,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         isOld0_2[i] * (isOld0_2[i] - 1) === 0;
     }
 
-    // decode tx data
+    // B - decode transactions
     ////////
     for (i = 0; i < nTx; i++) {
         decodeTx[i] = DecodeTx(nLevels);
@@ -168,13 +246,14 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         decodeTx[i].txCompressedDataV2 === txCompressedDataV2[i];
     }
 
-    // Check decode-tx intermediary signals
+    // C - check integrity decode intermediary signals
+    ////////
     for (i = 0; i < nTx - 1; i++) {
         decodeTx[i].onChain === imOnChain[i];
         decodeTx[i].outIdx === imOutIdx[i];
     }
 
-    // rollup tx
+    // D - process rollup transactions
     ////////
     for (i = 0; i < nTx; i++) {
         rollupTx[i] = RollupTx(nLevels, maxFeeTx);
@@ -287,7 +366,9 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
             rollupTx[i].oldExitRoot <== imExitRoot[i-1];
         }
     }
-    // check rollup transaction intermediary signals
+
+    // E - check integrity transactions intermediary signals
+    ////////
     for (i = 0; i < nTx-1; i++) {
         rollupTx[i].newStateRoot  === imStateRoot[i];
         rollupTx[i].newExitRoot  === imExitRoot[i];
@@ -296,7 +377,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         }
     }
 
-    // fee transactions
+    // F - process fee transactions
     //////
     for (i = 0; i < maxFeeTx; i++) {
         feeTx[i] = FeeTx(nLevels);
@@ -323,6 +404,9 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
             feeTx[i].siblings[j] <== siblings3[i][j]
         }
     }
+
+    // G - check integrity fee transactions intermediary signals
+    ////////
     // check fee transaction intermediary signals
     for (i = 0; i < maxFeeTx-1; i++) {
         feeTx[i].newStateRoot  === imStateRootFee[i];
@@ -335,7 +419,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         rollupTx[nTx-1].accFeeOut[i] === imFinalAccFee[i];
     }
 
-    // hash inputs
+    // H - compute global hash input
     ////////
     component hasherInputs = HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx);
 
@@ -365,6 +449,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
 
     hasherInputs.globalChainID <== globalChainID;
 
-    // set output
+    // set public output
     hashGlobalInputs <== hasherInputs.hashInputsOut;
 }

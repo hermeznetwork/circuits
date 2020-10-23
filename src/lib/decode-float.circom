@@ -3,6 +3,11 @@ include "../../node_modules/circomlib/circuits/comparators.circom";
 
 /**
  * Convert float16 bits to large integer
+ * large integer = (mantissa + 0.5*half_exponent) * 10^exponent
+ * [  mantissa   | half_exponent |  exponent  ]
+ * [   10 bits   |    1 bits     |   5 bits  ]
+ * @input in[16] - {Array[Bool]} - float16 number encoded as binary array
+ * @output out - {Field} - large integer
  */
 template DecodeFloatBin() {
     signal input in[16];
@@ -59,6 +64,8 @@ template DecodeFloatBin() {
 
 /**
  * Decode float16 to large integer
+ * @input in - {Field} - float16 encode representation
+ * @output out - {Field} - large integer
  */
 template DecodeFloat() {
     signal input in;

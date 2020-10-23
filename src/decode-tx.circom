@@ -6,10 +6,39 @@ include "./lib/decode-float.circom";
 
 /**
  * Decode transaction fields
+ * Note: 'txCompressedDataV2' is a shorter version of 'txCompressedData' in order to save bits
+ * further details could be found in https://docs.hermez.io/#/developers/protocol/hermez-protocol/circuits/circuits?id=decode-tx
  * @param nLevels - merkle tree depth
+ * @input previousOnChain - {Bool} - determines if previous transaction is L1
+ * @input txCompressedData - {Uint241} - encode transaction fields
+ * @input toEthAddr - {Uint160} - ethereum address receiver
+ * @input toBjjAy - {Field} - babyjubjub Y coordinate receiver
+ * @input rqTxCompressedDataV2 - {Uint193} -requested encode transaction fields version2
+ * @input rqToEthAddr - {Uint160} - requested ethereum address receiver
+ * @input rqToBjjAy - {Field} - requested babyjubjub Y coordinate
+ * @input fromEthAddr - {Uint160} - ethereum address sender
+ * @input fromBjjCompressed[256] - {Array[Bool]} - babyjubjub compressed sender
+ * @input loadAmountF - {Uint16} - amount to deposit from L1 to L2 encoded as float16
+ * @input globalChainID - {Uint16} - global chain identifier
+ * @input onChain - {Bool} - determines if the transaction is L1 or L2
+ * @input newAccount - {Bool} - determines if transaction creates a new account
+ * @input auxFromIdx - {Uint48} - auxiliary index to create accounts
+ * @input inIdx  - {Uint48} - old last index assigned
+ * @output L2TxData[nLevels*2 + 16 + 8] - {Array[Bool]} - L2 data availability
+ * @output txCompressedDataV2 - {Uint193} - encode transaction fields together version 2
+ * @output L1TxData - {Array[Bool]} - L1 Data
+ * @output outIdx - {Uint48} - new last index assigned
+ * @output fromIdx - {Uint48} - index sender
+ * @output toIdx - {Uint48} - index receiver
+ * @output amount - {Uint192} - amount to transfer from L2 to L2
+ * @output tokenID - {Uint32} - token identifier
+ * @output nonce - {Uint40} - nonce
+ * @output userFee - {Uint8} - user fee selector
+ * @output toBjjSign - {Bool} - babyjubjub sign receiver
+ * @output sigL2Hash - {Field} - poseidon hash of L2 data
  */
 template DecodeTx(nLevels) {
-    // tx L2
+    // tx L2 fields
     signal input previousOnChain;
     signal input txCompressedData; // data shared with L1 tx
     signal input toEthAddr;
@@ -22,7 +51,7 @@ template DecodeTx(nLevels) {
     signal output L2TxData[nLevels*2 + 16 + 8];
     signal output txCompressedDataV2;
 
-    // tx L1
+    // tx L1 fields
     signal input fromEthAddr;
     signal input fromBjjCompressed[256];
     signal input loadAmountF;
@@ -129,7 +158,7 @@ template DecodeTx(nLevels) {
     // toBjjSign
     toBjjSign <== n2bData.out[240];
 
-    // txCompressedDataV2
+    // Build txCompressedDataV2
     //////
     // fromIdx | toIdx | amountF | tokenID | nonce | userFee | toBjjSign
 
@@ -169,7 +198,7 @@ template DecodeTx(nLevels) {
 
     b2nTxCompressedDataV2.out ==> txCompressedDataV2;
 
-    //  L2TxData
+    // Build L2TxData
     ////////
     // Add fromIdx
     for (i = 0; i < nLevels; i++) {
@@ -188,7 +217,8 @@ template DecodeTx(nLevels) {
         L2TxData[nLevels*2 + 16 + 8 - 1 - i] <== n2bData.out[232 + i]*(1-onChain);
     }
 
-    // sigL2Hash
+    // Build sigL2Hash
+    ////////
     component hashSig = Poseidon(6);
     hashSig.inputs[0] <== txCompressedData;
     hashSig.inputs[1] <== toEthAddr;
@@ -199,7 +229,7 @@ template DecodeTx(nLevels) {
 
     hashSig.out ==> sigL2Hash;
 
-    //  L1TxData
+    // Build L1TxData
     ////////
     // Add fromEthAddr
     component n2bFromEthAddr = Num2Bits(160);
@@ -240,8 +270,9 @@ template DecodeTx(nLevels) {
         L1TxData[160 + 256 + 48 + 16 + 16 + 32 + 48 - 1 - i] <== n2bData.out[96 + i]*(onChain);
     }
 
-    // newAccount must be 1 if L1 Tx and fromIdx == 0
-    // check afterwards auxFromIdx is incremental
+    // Perform checks on transaction fields
+    ////////
+    // newAccount must be 1 if tx is L1 and fromIdx == 0
     component fromIdxIsZero = IsZero();
     fromIdxIsZero.in <== fromIdx;
     onChain*fromIdxIsZero.out === newAccount;
@@ -249,22 +280,23 @@ template DecodeTx(nLevels) {
     // increment Idx if it is an L1 tx and new account
     outIdx <== inIdx + onChain*newAccount;
 
-    // check Idx if it is an L1 tx and new account
+    // check auxFromIdx if it is an L1 tx and new account
+    // force that index inserted for creating new accounts must be incremental
     component idxChecker = ForceEqualIfEnabled();
     idxChecker.in[0] <== auxFromIdx;
     idxChecker.in[1] <== outIdx;
     idxChecker.enabled <== onChain*newAccount;
 
-    // Check that L1 tx are before L2 tx
+    // L1 tx must be processed before L2 tx
     (1 - previousOnChain) * onChain === 0;
 
-    // Check chainID
+    // checks chainID tx field matches globalChainID forced by the smart contract
     component chainIDChecker = ForceEqualIfEnabled();
     chainIDChecker.in[0] <== globalChainID;
     chainIDChecker.in[1] <== chainID;
     chainIDChecker.enabled <== (1 - onChain);
 
-    // Check constant signature
+    // checks signatureConstant transaction field matches the hardcoded value CONST_SIG
     var CONST_SIG = 3322668559;
 
     component constSigChecker = ForceEqualIfEnabled();
