@@ -8,10 +8,20 @@ include "../node_modules/circomlib/circuits/bitify.circom";
  * @param nTx - absolute maximum of L1 or L2 transactions
  * @param maxL1Tx - absolute maximum of L1 transaction
  * @param maxFeeTx - absolute maximum of fee transactions
+ * @input oldLastIdx - {Uint48}	- old last merkle tree index created
+ * @input newLastIdx- {Uint48} - new last merkle tree index created
+ * @input oldStateRoot - {Field} - old state root
+ * @input newStateRoot - {Field} - new state root
+ * @input newExitRoot - {Field} - new exit root
+ * @input L1TxsData[maxL1Tx * (2*nLevels + 32 + 16 + 16 + 256 + 160)] - {Array[Bool]} - bits L1 data
+ * @input L2TxsData[nTx * (2*nLevels + 16 + 8)]	- {Array[Bool]} - bits L2 transaction data-availability
+ * @input feeTxsData[maxFeeTx] - {Array[nLevels]} - all index accounts to receive accumulated fees
+ * @input globalChainID	- {Uint16} - global chain identifier
+ * @output hashInputsOut - {Field} - sha256 hash of pretended public inputs
  */
 template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     // bits for each public input type
-    var bitsIndexMax = 48; // MAX_NLEVELS 
+    var bitsIndexMax = 48; // MAX_NLEVELS
     var bitsIndex = nLevels;
     var bitsRoots = 256;
     var bitsChainID = 16;
@@ -27,7 +37,7 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     signal input newExitRoot;
     signal input L1TxsData[bitsL1TxsData]; // already in bits
     signal input L2TxsData[bitsL2TxsData]; // already in bits
-    signal input feeTxsData[maxFeeTx]; // array of merkle tree index
+    signal input feeTxsData[maxFeeTx]; // array of merkle tree indexes
     signal input globalChainID;
 
     // output
@@ -90,6 +100,7 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     n2bChainID.in <== globalChainID;
 
     // build SHA256 with all inputs
+    ////////
     var totalBitsSha256 = 2*bitsIndexMax + 3*bitsRoots + bitsChainID + bitsL1TxsData + bitsL2TxsData + bitsFeeTxsData;
 
     component inputsHasher = Sha256(totalBitsSha256);

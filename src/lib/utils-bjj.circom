@@ -4,6 +4,10 @@ include "../../node_modules/circomlib/circuits/pointbits.circom";
 /**
  * Retrieve babyjubjub y coordinate and babyjubjub sign
  * from babyjubjub compressed bits
+ * Note that this does not check any constraint on valid babyjubjub coordinates
+ * @input bjjCompressed[256] - {Array[Bool]} - babyjubjub compressed encoded as bit array in bigEndian
+ * @output ay - {Field} - babyjubjub Y coordinate
+ * @output sign - {Bool} - babyjubjub sign
  */
 template BitsCompressed2AySign(){
     signal input bjjCompressed[256];
@@ -25,6 +29,10 @@ template BitsCompressed2AySign(){
 
 /**
  * Retrieve babyjubjub x coordinate from y coordinate and sign
+ * Note that it is check valid babyjubjub point by using internally 'Bits2Point_Strict'
+ * @input ay - {Field} - babyjubjub Y coordinate
+ * @input sign - {Bool} - babyjubjub sign
+ * @output ax - {Field} - babyjubjub X coordinate
  */
 template AySign2Ax(){
     signal input ay;

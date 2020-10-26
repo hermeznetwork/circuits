@@ -3,7 +3,11 @@ Implements zkSNARKs circuits for [hermez network](https://hermez.io/)
 
 ![Main CI](https://github.com/hermeznetwork/circuits/workflows/Main%20CI/badge.svg)
 
-## Circuits
+## Documentation
+
+It could be found in: https://docs.hermez.io/#/developers/protocol/hermez-protocol/circuits/circuits?id=circuits
+
+## Circuits organization
 
 - `src`
   - `lib`

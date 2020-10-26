@@ -5,8 +5,54 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
 
 /**
  * Calculates all the internal transaction states
+ * @input fromIdx - {Uint48} - index sender
+ * @input toIdx - {Uint48} - index receiver
+ * @input toEthAddr - {Uint160} - ethereum address receiver
+ * @input auxFromIdx - {Uint48} - auxiliary index to create accounts
+ * @input auxToIdx - {Uint48} - auxiliary index when signed index receiver is set to null
+ * @input amount - {Uint192} - amount to transfer from L2 to L2
+ * @input newExit - {Bool} - determines if the transaction create a new account in the exit tree
+ * @input loadAmount - {Uint192} - amount to deposit from L1 to L2
+ * @input newAccount - {Bool} - determines if transaction creates a new account
+ * @input onChain - {Bool} - determines if the transacion is L1 or L2
+ * @input fromEthAddr - {Uint160} - ethereum address sender
+ * @input ethAddr1 - {Uint160} - ethereum address of sender leaf
+ * @input tokenID - {Uint32} - tokenID signed in the transaction
+ * @input tokenID1  - {Uint32} - tokenID of the sender leaf
+ * @input tokenID2 - {Uint32} - tokenID of the receiver leaf
+ * @output s1 - {Bool} - processor 1 state (sender)
+ * @output s2 - {Bool} - processor 2 state (receiver)
+ * @output key1 - {Uint48} - processor 1 key
+ * @output key2 - {Uint48} - processor 2 key
+ * @output P1_fnc0 - {Bool} - processor 1 bit 0 functionality
+ * @output P1_fnc1 - {Bool} - processor 1 bit 1 functionality
+ * @output P2_fnc0 - {Bool} - processor 2 bit 0 functionality
+ * @output P2_fnc1 - {Bool} - processor 2 bit 1 functionality
+ * @output isExit - {Bool} - determines if the transaction is an exit
+ * @output verifySignEnabled - {Bool} - determines if the eddsa signature needs to be verified
+ * @output nop - {Bool} - determines if the transaction should be considered as a NOP transaction
+ * @output checkToEthAddr - {Bool} - determines if receiver ethereum address needs to be checked
+ * @output checkToBjj - {Bool} - determines if receiver babyjubjub needs to be checked
+ * @output nullifyLoadAmount - {Bool} - determines if loadAmount is considered to be 0
+ * @output nullifyAmount - {Bool} - determines if amount is considered to be 0
  */
 template RollupTxStates() {
+    // The following table summarize all the internal states that has to be processed depending on tx type
+    // |    **Transaction type**     |   fromIdx   | auxFromIdx | toIdx |  auxToIdx  |       toEthAddr        | onChain | newAccount | loadAmount | amount |       newExit        | *s1* |         *s2*         | *processor 1* |    *processor 2*     | *isExit* | *verifySignEnable* | *nop* | *checkToEthAddr* | *checkToBjj* |
+    // |:---------------------------:|:-----------:|:----------:|:-----:|:----------:|:----------------------:|:-------:|:----------:|:----------:|:------:|:--------------------:|:----:|:--------------------:|:-------------:|:--------------------:|:--------:|:------------------:|:-----:|:----------------:|:------------:|
+    // |         createAccount       |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     0      |   0    |          0           |  1   |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |    createAccountDeposit     |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     X      |   0    |          0           |  1   |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // | createAccountDepositTranfer |      0      |    key1    | key2  |     0      |           0            |    1    |     1      |     X      |   X    |          0           |  1   |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |           deposit           |    key1     |     0      |   0   |     0      |           0            |    1    |     0      |     X      |   0    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |       depositTransfer       |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     X      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |        forceTransfer        |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     0      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |          forceExit          | key1 - key2 |     0      |   1   |     0      |           0            |    1    |     0      |     0      |   X    | 0: UPDATE, 1: INSERT |  0   | X: UPDATE, 0: INSERT |    UPDATE     | EXIT INSERT - UPDATE |    1     |         0          |   0   |        0         |      0       |
+    // |          transfer           |    key1     |     0      | key2  |     0      |           0            |    0    |     0      |     0      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        0         |      0       |
+    // |            exit             | key1 - key2 |     0      |   1   |     0      |           0            |    0    |     0      |     0      |   X    | 0: UPDATE, 1: INSERT |  0   | X: UPDATE, 0: INSERT |    UPDATE     | EXIT INSERT - UPDATE |    1     |         1          |   0   |        0         |      0       |
+    // |      transferToEthAddr      |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR != 0xF..F |    0    |     0      |     0      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      0       |
+    // |        transferToBjj        |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR == 0xF..F |    0    |     0      |     0      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      1       |
+    // |             nop             |      0      |     0      |   0   |     0      |           0            |    0    |     0      |     0      |   0    |          0           |  0   |          0           |      NOP      |         NOP          |    0     |         0          |   1   |        0         |      0       |
+
     signal input fromIdx;
     signal input toIdx;
     signal input toEthAddr;
@@ -45,6 +91,8 @@ template RollupTxStates() {
 
     // Select finalFromIdx
     ////////
+    // if the transaction is an L1 create account, 'auxFromIdx' is chosen
+    // since it will be used to create the new account
     signal finalFromIdx;
 
     component selectFromIdx = Mux1();
@@ -56,6 +104,10 @@ template RollupTxStates() {
 
     // Select finalToIdx
     ////////
+    // if user signs 'toIdx == 0', then idx receiver would be freely chosen
+    // by the operator and it is set on 'auxToIdx'
+    // note that this might happen in 'transferToEthAddr' and 'transferToBjj' transaction types
+
     signal finalToIdx;
 
     component toIdxIsZero = IsZero();
@@ -73,6 +125,9 @@ template RollupTxStates() {
 
     // Check toEthAddr
     ////////
+    // user must sign ethereum address receiver in tx types 'transferToEthAddr' and 'transferToBjj'
+    // it is set in protocol that if ethereum address signed is 0xFFFF...FFFF, babyjubjub will be also checked
+
     var ETH_ADDR_ANY = (1<<160) - 1; // 0xFFFF...FFFF
 
     component isToEthAddrAny = IsEqual();
@@ -81,6 +136,8 @@ template RollupTxStates() {
 
     // Check if tx is an exit
     ////////
+    // exit transaction is set by signing 'toIdx == 1'
+    // which is a special account index to determine that the tx would be an exit
     var EXIT_IDX = 1;
 
     component checkIsExit = IsEqual();
@@ -91,6 +148,7 @@ template RollupTxStates() {
 
     // finalFromIdx == 0 --> NOP processor 1
     ////////
+    // if the tx has no account index assigned, the tx would be considered as NULL
     component finalFromIdxIsZero = IsZero();
     finalFromIdxIsZero.in <== finalFromIdx;
     signal isFinalFromIdx;
@@ -115,6 +173,14 @@ template RollupTxStates() {
 
     // newAccount must be 0 if L2 Tx
     (1-onChain)*newAccount === 0;
+
+    // Table processor functions:
+    // | func[0] | func[1] | Function |
+    // |:-------:|:-------:|:--------:|
+    // |    0    |    0    |   NOP    |
+    // |    0    |    1    |  UPDATE  |
+    // |    1    |    0    |  INSERT  |
+    // |    1    |    1    |  DELETE  |
 
     // select processor 1 function and key1
     ////////
@@ -152,15 +218,19 @@ template RollupTxStates() {
 
     // verify L2 signature
     ////////
-    verifySignEnabled <== (1-onChain)*isFinalFromIdx;
+    // L2 signature is only checkd if the tx is L2 and the sender account is not NULL
+     verifySignEnabled <== (1-onChain)*isFinalFromIdx;
 
-    // nop signaling for balance-updater
+    // nop signaling for 'balance-updater' circuit
     ////////
     nop <== finalFromIdxIsZero.out;
 
-    // signals to check receiver `To`
-    // transfer toEthAddr or toBjj
+    // signals to check receiver in tx type 'transfertoEthAddr' or 'transferToBjj'
     ////////
+    // assuming tx is not NOP:
+    // - if tx type is 'transferToEthAddr', then ethereum address signed will be checked on receiver account
+    // - if tx type is 'transferToBjj', then either ethereum address and Bjj address will be checked on receiver account
+
     signal tmpCheckToEthAddr;
     signal tmpCheckToBjj;
 
@@ -172,8 +242,23 @@ template RollupTxStates() {
 
     // Should check signed fields on L1 tx
     ////////
+    // L1 invalid transactions should not be allowed but the circuit needs to process them even if they are not valid
+    // In order to do so, the circuit performs a zero 'loadAmount' \ 'amount' update if L1 transaction is not valid
+    // Therefore, circuit nullifies 'loadAmount' \ 'amount' if L1 invalid transaction is detected
+    // Next table sets when to apply 'nullifyLoadAmount' \ 'nullifyAmount' depending on L1 transaction type
+
+    // |     **Transaction type**     | newAccount | isLoadAmount | isAmount | checkEthAddr | checkTokenID1 |  checkTokenID2   | *nullifyLoadAmount* | *nullifyAmount* |
+    // |:----------------------------:|:----------:|:------------:|:--------:|:------------:|:-------------:|:----------------:|:-------------------:|:---------------:|
+    // |         createAccount        |     1      |      0       |    0     |      0       |       0       |        0         |          0          |        0        |
+    // |     createAccountDeposit     |     1      |      1       |    0     |      0       |       0       |        0         |          0          |        0        |
+    // | createAccountDepositTransfer |     1      |      1       |    1     |      0       |       0       |        1         |          0          |        1        |
+    // |           deposit            |     0      |      1       |    0     |      0       |       1       |        0         |          1          |        0        |
+    // |       depositTransfer        |     0      |      1       |    1     |      1       |       1       |        1         |          0          |        1        |
+    // |        forceTransfer         |     0      |      0       |    1     |      1       |       1       |        1         |          0          |        1        |
+    // |          forceExit           |     0      |      0       |    1     |      1       |       1       | 1 if newExit = 0 |          0          |        1        |
+
     signal onChainNotCreateAccount;
-    onChainNotCreateAccount <== (1 - newAccount)*onChain;
+    onChainNotCreateAccount <== (1 - newAccount)*onChain; // tx is L1 and does not create an account
 
     // ethAddr1
     signal applyNullifierEthAddr;

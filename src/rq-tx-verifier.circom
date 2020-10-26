@@ -2,7 +2,19 @@ include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/mux3.circom";
 
 /**
- * Verify future and past transaction data for atomic tramsactions
+ * Check past and future data transactions to match the required data signed
+ * One transaction is linked to another by this relative index meaning that a transaction can only be processed
+ * if the linked transaction is processed too
+ * @input futureTxCompressedDataV2[3] - {Array[Uint192]} - future transactions txCompressedDataV2
+ * @input pastTxCompressedDataV2[4] - {Array[Uint192]} - past transactions txCompressedDataV2
+ * @input futureToEthAddr[3] -	{Array[Uint160]} - future transactions toEthAddr
+ * @input pastToEthAddr[4] - {Array[Uint160]} - past transactions toEthAddr
+ * @input futureToBjjAy[3]	- {Array[Field]} - future transactions toBjjAy
+ * @input pastToBjjAy[4] - {Array[Field]} - past transactions toBjjAy
+ * @input rqTxCompressedDataV2 -  - requested encode transaction fields together version 2
+ * @input rqToEthAddr - {Uint160} - requested ethereum address receiver
+ * @input rqToBjjAy - {Field} - requested babyjubjub y coordinate
+ * @input rqTxOffset - {Uint3} - relative linked transaction
  */
 template RqTxVerifier() {
     signal input futureTxCompressedDataV2[3];
