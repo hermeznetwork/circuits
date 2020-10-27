@@ -29,6 +29,8 @@ template ComputeTxFee(){
     component n2bFee = Num2Bits(192 + bitsShiftPrecision);
     n2bFee.in <== amount * feeTableSelector.feeOut;
 
+    var test = amount * feeTableSelector.feeOut;
+
     // fee2Charge = feeShifted >> 79 
     component b2nFee = Bits2Num(192);
     for (var i = 0; i < 192; i++) {
@@ -36,7 +38,6 @@ template ComputeTxFee(){
     }
     b2nFee.out ==> fee2Charge;
 
-    log(feeTableSelector.feeOut);
-    log(n2bFee.in);
-
+    // log(n2bFee.in);
+    // log(test);
 }
