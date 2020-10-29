@@ -155,7 +155,7 @@ describe("Test rollup-tx", function () {
             fromEthAddr: account1.ethAddr,
             toIdx: 257,
             amount: 100,
-            userFee: 200,
+            userFee: 126,
             onChain: true
         };
         bb2.addTx(tx);
@@ -248,7 +248,7 @@ describe("Test rollup-tx", function () {
             fromEthAddr: 0,
             toIdx: 257,
             amount: 100,
-            userFee: 220,
+            userFee: 184,
             onChain: 0,
             nonce: 0,
         };
@@ -279,7 +279,7 @@ describe("Test rollup-tx", function () {
             fromEthAddr: 0,
             toIdx: Constants.exitIdx,
             amount: 100,
-            userFee: 220,
+            userFee: 184,
             nonce: 0,
             onChain: 0,
         };
@@ -314,7 +314,7 @@ describe("Test rollup-tx", function () {
             tokenID: 1,
             amount: Scalar.e(50),
             nonce: 0,
-            userFee: 200,
+            userFee: 126,
         };
 
         account1.signTx(tx);
@@ -354,7 +354,7 @@ describe("Test rollup-tx", function () {
             tokenID: 1,
             amount: Scalar.e(50),
             nonce: 0,
-            userFee: 200,
+            userFee: 126,
         };
 
         account1.signTx(tx);
@@ -457,7 +457,7 @@ describe("Test rollup-tx", function () {
             fromEthAddr: account2.ethAddr,
             toIdx: 257,
             amount: 100,
-            userFee: 200,
+            userFee: 126,
             onChain: true
         };
 
@@ -471,7 +471,7 @@ describe("Test rollup-tx", function () {
             fromEthAddr: account1.ethAddr,
             toIdx: 257,
             amount: 100,
-            userFee: 200,
+            userFee: 126,
             onChain: true
         };
 
@@ -504,7 +504,7 @@ describe("Test rollup-tx", function () {
             fromEthAddr: account2.ethAddr,
             toIdx: 258,
             amount: 100,
-            userFee: 200,
+            userFee: 126,
             onChain: true
         };
 
@@ -534,7 +534,7 @@ describe("Test rollup-tx", function () {
             fromEthAddr: account1.ethAddr,
             toIdx: 257,
             amount: 100,
-            userFee: 200,
+            userFee: 126,
             onChain: true
         };
 

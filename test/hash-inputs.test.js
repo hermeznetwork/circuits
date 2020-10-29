@@ -103,7 +103,7 @@ describe("Test hash-inputs", function () {
             tokenID: 1,
             amount: Scalar.e(50),
             nonce: 0,
-            userFee: 200, // effective fee is 4
+            userFee: 126, // effective fee is 4
         };
 
         account1.signTx(tx);

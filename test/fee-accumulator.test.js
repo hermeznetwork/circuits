@@ -113,7 +113,7 @@ describe("Test fee-accumulator", function () {
         ];
 
         for (let i = 0; i < 1; i++) {
-            const w = await circuit.calculateWitness(testVectors[i].input);
+            const w = await circuit.calculateWitness(testVectors[i].input, {logOutput: false});
             await circuit.assertOut(w, testVectors[i].out);
         }
     });

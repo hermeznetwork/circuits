@@ -40,7 +40,7 @@ describe("Test decode-float", function () {
         ];
 
         for (let i = 0; i < testVector.length; i++) {
-            const w = await circuit.calculateWitness({in: testVector[i][0]});
+            const w = await circuit.calculateWitness({in: testVector[i][0]}, {logOutput: false});
 
             await circuit.assertOut(w, {out: testVector[i][1]});
         }
