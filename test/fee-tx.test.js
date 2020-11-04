@@ -112,7 +112,7 @@ describe("Test fee-tx", function () {
             tokenID: 1,
             amount: 50,
             nonce: 0,
-            userFee: 217,
+            userFee: 173,
         };
 
         account1.signTx(tx);
@@ -124,7 +124,7 @@ describe("Test fee-tx", function () {
             tokenID: 2,
             amount: 50,
             nonce: 0,
-            userFee: 200,
+            userFee: 126,
         };
 
         account1.signTx(tx2);

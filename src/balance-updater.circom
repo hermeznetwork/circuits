@@ -1,7 +1,7 @@
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
 
-include "./lib/fee-table-selector.circom";
+include "./compute-fee.circom";
 
 /**
  * Compute new balances from sender and receiver
@@ -17,7 +17,7 @@ include "./lib/fee-table-selector.circom";
  * @input nullifyAmount - {Bool} - determines if amount is considered to be 0
  * @output newStBalanceSender - {Uint192} - final balance sender
  * @output newStBalanceReceiver - {Uint192} - final balance receiver
- * @output update2 - {Bool} - determines if processor 2 performs a NOP transaction
+ * @output isP2Nop - {Bool} - determines if processor 2 performs a NOP function
  * @output fee2Charge - {Uint192} - effective transaction fee
  */
 template BalanceUpdater() {
@@ -33,10 +33,9 @@ template BalanceUpdater() {
 
     signal output newStBalanceSender;
     signal output newStBalanceReceiver;
-    signal output update2;
+    signal output isP2Nop;
     signal output fee2Charge;
 
-    signal feeApplies;          // 1 if fee applies (L2), 0 if not applies (L1)
     signal underflowOk;         // 1 if sender balance is > 0
     signal effectiveAmount1;    // original amount to transfer. Set to 0 if tx is NOP.
     signal effectiveAmount2;    // tx amount once nullifyAmount is applied
@@ -46,22 +45,12 @@ template BalanceUpdater() {
 
     // compute fee2Charge
     ////////
-    var bitsShiftPrecision = 79;
+    component computeFee = ComputeFee(); 
+    computeFee.feeSel <== feeSelector;
+    computeFee.amount <== amount;
+    computeFee.applyFee <== (1-onChain)*(1-nop); // fee applies only on L2 tx and if it is not a NOP tx
 
-    // fee applies only on L2 tx and if it is not a NOP tx
-    feeApplies <== (1-onChain)*(1-nop);
-
-    component feeTableSelector = FeeTableSelector();
-    feeTableSelector.feeSel <== feeSelector*feeApplies;
-
-    component n2bFee = Num2Bits(192 + bitsShiftPrecision);
-    n2bFee.in <== amount * feeTableSelector.feeOut;
-
-    component b2nFee = Bits2Num(192);
-    for (var i = 0; i < 192; i++) {
-        b2nFee.in[i] <== n2bFee.out[i + bitsShiftPrecision];
-    }
-    b2nFee.out ==> fee2Charge;
+    computeFee.feeOut ==> fee2Charge;
 
     // compute effective loadAmount and amount
     ////////
@@ -106,7 +95,7 @@ template BalanceUpdater() {
     // Set NOP fucntion on processor 2 (receiver account) if original amount to transfer is 0 since
     // receiver account does not change and coordinator does not need to provide
     // information to proof leaf existence
-    update2 <== (1 - effectiveAmountIsZero.out);
+    isP2Nop <== (1 - effectiveAmountIsZero.out);
 
     // Note that amount to transfer could be 0 due that the transaction has been nullified.
     // In this case, coordinator must provide account data to be processed by the processor 2 (receiver processor)

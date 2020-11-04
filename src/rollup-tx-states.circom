@@ -20,8 +20,8 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  * @input tokenID - {Uint32} - tokenID signed in the transaction
  * @input tokenID1  - {Uint32} - tokenID of the sender leaf
  * @input tokenID2 - {Uint32} - tokenID of the receiver leaf
- * @output s1 - {Bool} - processor 1 state (sender)
- * @output s2 - {Bool} - processor 2 state (receiver)
+ * @output isP1Insert - {Bool} - determines if processor 1 performs an INSERT function (sender)
+ * @output isP2Insert - {Bool} - determines if processor 2 performs an INSERT function (receiver)
  * @output key1 - {Uint48} - processor 1 key
  * @output key2 - {Uint48} - processor 2 key
  * @output P1_fnc0 - {Bool} - processor 1 bit 0 functionality
@@ -38,20 +38,20 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  */
 template RollupTxStates() {
     // The following table summarize all the internal states that has to be processed depending on tx type
-    // |    **Transaction type**     |   fromIdx   | auxFromIdx | toIdx |  auxToIdx  |       toEthAddr        | onChain | newAccount | loadAmount | amount |       newExit        | *s1* |         *s2*         | *processor 1* |    *processor 2*     | *isExit* | *verifySignEnable* | *nop* | *checkToEthAddr* | *checkToBjj* |
-    // |:---------------------------:|:-----------:|:----------:|:-----:|:----------:|:----------------------:|:-------:|:----------:|:----------:|:------:|:--------------------:|:----:|:--------------------:|:-------------:|:--------------------:|:--------:|:------------------:|:-----:|:----------------:|:------------:|
-    // |         createAccount       |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     0      |   0    |          0           |  1   |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |    createAccountDeposit     |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     X      |   0    |          0           |  1   |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // | createAccountDepositTranfer |      0      |    key1    | key2  |     0      |           0            |    1    |     1      |     X      |   X    |          0           |  1   |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |           deposit           |    key1     |     0      |   0   |     0      |           0            |    1    |     0      |     X      |   0    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |       depositTransfer       |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     X      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |        forceTransfer        |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     0      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |          forceExit          | key1 - key2 |     0      |   1   |     0      |           0            |    1    |     0      |     0      |   X    | 0: UPDATE, 1: INSERT |  0   | X: UPDATE, 0: INSERT |    UPDATE     | EXIT INSERT - UPDATE |    1     |         0          |   0   |        0         |      0       |
-    // |          transfer           |    key1     |     0      | key2  |     0      |           0            |    0    |     0      |     0      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        0         |      0       |
-    // |            exit             | key1 - key2 |     0      |   1   |     0      |           0            |    0    |     0      |     0      |   X    | 0: UPDATE, 1: INSERT |  0   | X: UPDATE, 0: INSERT |    UPDATE     | EXIT INSERT - UPDATE |    1     |         1          |   0   |        0         |      0       |
-    // |      transferToEthAddr      |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR != 0xF..F |    0    |     0      |     0      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      0       |
-    // |        transferToBjj        |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR == 0xF..F |    0    |     0      |     0      |   X    |          0           |  0   |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      1       |
-    // |             nop             |      0      |     0      |   0   |     0      |           0            |    0    |     0      |     0      |   0    |          0           |  0   |          0           |      NOP      |         NOP          |    0     |         0          |   1   |        0         |      0       |
+    // |    **Transaction type**     |   fromIdx   | auxFromIdx | toIdx |  auxToIdx  |       toEthAddr        | onChain | newAccount | loadAmount | amount |       newExit        | *isP1Insert* |     *isP2Insert*     | *processor 1* |    *processor 2*     | *isExit* | *verifySignEnable* | *nop* | *checkToEthAddr* | *checkToBjj* |
+    // |:---------------------------:|:-----------:|:----------:|:-----:|:----------:|:----------------------:|:-------:|:----------:|:----------:|:------:|:--------------------:|:------------:|:--------------------:|:-------------:|:--------------------:|:--------:|:------------------:|:-----:|:----------------:|:------------:|
+    // |         createAccount       |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     0      |   0    |          0           |       1      |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |    createAccountDeposit     |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     X      |   0    |          0           |       1      |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // | createAccountDepositTranfer |      0      |    key1    | key2  |     0      |           0            |    1    |     1      |     X      |   X    |          0           |       1      |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |           deposit           |    key1     |     0      |   0   |     0      |           0            |    1    |     0      |     X      |   0    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |       depositTransfer       |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     X      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |        forceTransfer        |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     0      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |          forceExit          | key1 - key2 |     0      |   1   |     0      |           0            |    1    |     0      |     0      |   X    | 0: UPDATE, 1: INSERT |       0      | X: UPDATE, 0: INSERT |    UPDATE     | EXIT INSERT - UPDATE |    1     |         0          |   0   |        0         |      0       |
+    // |          transfer           |    key1     |     0      | key2  |     0      |           0            |    0    |     0      |     0      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        0         |      0       |
+    // |            exit             | key1 - key2 |     0      |   1   |     0      |           0            |    0    |     0      |     0      |   X    | 0: UPDATE, 1: INSERT |       0      | X: UPDATE, 0: INSERT |    UPDATE     | EXIT INSERT - UPDATE |    1     |         1          |   0   |        0         |      0       |
+    // |      transferToEthAddr      |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR != 0xF..F |    0    |     0      |     0      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      0       |
+    // |        transferToBjj        |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR == 0xF..F |    0    |     0      |     0      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      1       |
+    // |             nop             |      0      |     0      |   0   |     0      |           0            |    0    |     0      |     0      |   0    |          0           |       0      |          0           |      NOP      |         NOP          |    0     |         0          |   1   |        0         |      0       |
 
     signal input fromIdx;
     signal input toIdx;
@@ -72,8 +72,8 @@ template RollupTxStates() {
     signal input tokenID1;
     signal input tokenID2;
 
-    signal output s1;
-    signal output s2;
+    signal output isP1Insert;
+    signal output isP2Insert;
     signal output key1;
     signal output key2;
     signal output P1_fnc0;
@@ -184,10 +184,10 @@ template RollupTxStates() {
 
     // select processor 1 function and key1
     ////////
-    s1 <== onChain*newAccount; // processor 1 performs an INSERT
+    isP1Insert <== onChain*newAccount; // processor 1 performs an INSERT
 
-    P1_fnc0 <== s1*isFinalFromIdx; // processor 1 performs NOP if finalFromIdx == 0
-    P1_fnc1 <== (1-s1)*isFinalFromIdx;
+    P1_fnc0 <== isP1Insert*isFinalFromIdx; // processor 1 performs NOP if finalFromIdx == 0
+    P1_fnc1 <== (1-isP1Insert)*isFinalFromIdx;
 
     component mux1 = Mux2();
     mux1.c[0] <== 0;
@@ -201,10 +201,10 @@ template RollupTxStates() {
 
     // select processor 2 function and key2
     ////////
-    s2 <== isExit*newExit; // processor 2 performs an INSERT
+    isP2Insert <== isExit*newExit; // processor 2 performs an INSERT
 
-    P2_fnc0 <== s2*isFinalFromIdx; // processor 2 performs NOP if fromIdx == 0
-    P2_fnc1 <== (1-s2)*isFinalFromIdx;
+    P2_fnc0 <== isP2Insert*isFinalFromIdx; // processor 2 performs NOP if fromIdx == 0
+    P2_fnc1 <== (1-isP2Insert)*isFinalFromIdx;
 
     component mux2 = Mux2();
     mux2.c[0] <== 0;
@@ -291,7 +291,7 @@ template RollupTxStates() {
     shouldCheckTokenID2_0 <== onChain*isAmount;
 
     signal shouldCheckTokenID2_1;
-    shouldCheckTokenID2_1 <== shouldCheckTokenID2_0 * (1 - s2);
+    shouldCheckTokenID2_1 <== shouldCheckTokenID2_0 * (1 - isP2Insert);
 
     component checkTokenID2 = IsEqual();
     checkTokenID2.in[0] <== tokenID;

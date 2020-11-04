@@ -268,7 +268,7 @@ template RollupTx(nLevels, maxFeeTx) {
     component checkTokenID2 = ForceEqualIfEnabled();
     checkTokenID2.in[0] <== tokenID;
     checkTokenID2.in[1] <== tokenID2;
-    checkTokenID2.enabled <== (1 - onChain)*(1 - states.s2);
+    checkTokenID2.enabled <== (1 - onChain)*(1 - states.isP2Insert);
 
     // force sender tokenID on L1-create-account
     // if tx type involves an account creation, it is forced that the account created
@@ -276,7 +276,7 @@ template RollupTx(nLevels, maxFeeTx) {
     component checkTokenID1L1 = ForceEqualIfEnabled();
     checkTokenID1L1.in[0] <== tokenID;
     checkTokenID1L1.in[1] <== tokenID1;
-    checkTokenID1L1.enabled <== states.s1;
+    checkTokenID1L1.enabled <== states.isP1Insert;
 
     // force sender fromEthAddr on L1-create-account
     // if tx type involves an account creation, it is forced that the account created
@@ -284,7 +284,7 @@ template RollupTx(nLevels, maxFeeTx) {
     component fromEthAddrChecker = ForceEqualIfEnabled();
     fromEthAddrChecker.in[0] <== fromEthAddr;
     fromEthAddrChecker.in[1] <== ethAddr1;
-    fromEthAddrChecker.enabled <== states.s1;
+    fromEthAddrChecker.enabled <== states.isP1Insert;
 
     // D - compute old hash states
     ////////
@@ -323,56 +323,56 @@ template RollupTx(nLevels, maxFeeTx) {
     component s1Balance = Mux1();
     s1Balance.c[0] <== balance1;
     s1Balance.c[1] <== 0;
-    s1Balance.s <== states.s1;
+    s1Balance.s <== states.isP1Insert;
 
     // INSERT: babyjubjub sign would be taken from 'decodeFromBjj.sign' which is the 'fromBjjCompressed' signed on L1 tx
     // otherwise, babyjubjub sign sender account will be selected
     component s1Sign = Mux1();
     s1Sign.c[0] <== sign1;
     s1Sign.c[1] <== decodeFromBjj.sign;
-    s1Sign.s <== states.s1;
+    s1Sign.s <== states.isP1Insert;
 
     // INSERT: babyjubjub ay would be taken from 'decodeFromBjj.ay' which is the 'fromBjjCompressed' signed on L1 tx
     // otherwise, babyjubjub ay sender account will be selected
     component s1Ay = Mux1();
     s1Ay.c[0] <== ay1;
     s1Ay.c[1] <== decodeFromBjj.ay;
-    s1Ay.s <== states.s1;
+    s1Ay.s <== states.isP1Insert;
 
     // INSERT: sender nonce would be 0
     // otherwise, nonce sender account will be selected
     component s1Nonce = Mux1();
     s1Nonce.c[0] <== nonce1;
     s1Nonce.c[1] <== 0;
-    s1Nonce.s <== states.s1;
+    s1Nonce.s <== states.isP1Insert;
 
     // INSERT: ethereum address would be taken from 'fromEthAddr' which is signed on L1 tx
     // otherwise, ethereum address sender account will be selected
     component s1EthAddr = Mux1();
     s1EthAddr.c[0] <== ethAddr1;
     s1EthAddr.c[1] <== fromEthAddr;
-    s1EthAddr.s <== states.s1;
+    s1EthAddr.s <== states.isP1Insert;
 
     // INSERT: token identifier would be taken from 'tokenID' which is signed on L1 tx
     // otherwise, token identifier sender account will be selected
     component s1TokenID = Mux1();
     s1TokenID.c[0] <== tokenID1;
     s1TokenID.c[1] <== tokenID;
-    s1TokenID.s <== states.s1;
+    s1TokenID.s <== states.isP1Insert;
 
     // INSERT: processor old key would be taken from 'oldKey1' which is set by the coordinator
     // otherwise, key is selected from states depending on tx type
     component s1OldKey = Mux1();
     s1OldKey.c[0] <== states.key1;
     s1OldKey.c[1] <== oldKey1;
-    s1OldKey.s <== states.s1;
+    s1OldKey.s <== states.isP1Insert;
 
     // INSERT: processor state hash would be taken from 'oldValue1' which is set by the coordinator
     // otherwise, state hash is selected from oldState1 Packer
     component s1OldValue = Mux1();
     s1OldValue.c[0] <== oldSt1Hash.out;
     s1OldValue.c[1] <== oldValue1;
-    s1OldValue.s <== states.s1;
+    s1OldValue.s <== states.isP1Insert;
 
     // state processor 2 : isExit * newExit
     // perform INSERT if transaction is an 'exit' and involves and account creation on exit tree
@@ -385,21 +385,21 @@ template RollupTx(nLevels, maxFeeTx) {
     component s2Balance = Mux1();
     s2Balance.c[0] <== balance2;
     s2Balance.c[1] <== 0;
-    s2Balance.s <== states.s2;
+    s2Balance.s <== states.isP2Insert;
 
     // INSERT: babyjubjub sign will be taken from sender leaf
     // otherwise, babyjubjub sign receiver account would be selected
     component s2Sign = Mux1();
     s2Sign.c[0] <== sign2;
     s2Sign.c[1] <== s1Sign.out;
-    s2Sign.s <== states.s2;
+    s2Sign.s <== states.isP2Insert;
 
     // INSERT: babyjubjub Y coordinate will be taken from sender leaf
     // otherwise, babyjubjub sign receiver account would be selected
     component s2Ay = Mux1();
     s2Ay.c[0] <== ay2;
     s2Ay.c[1] <== s1Ay.out;
-    s2Ay.s <== states.s2;
+    s2Ay.s <== states.isP2Insert;
 
     // INSERT: nonce will be 0
     // otherwise, nonce receiver account would be selected
@@ -407,35 +407,35 @@ template RollupTx(nLevels, maxFeeTx) {
     component s2Nonce = Mux1();
     s2Nonce.c[0] <== nonce2;
     s2Nonce.c[1] <== 0;
-    s2Nonce.s <== states.s2;
+    s2Nonce.s <== states.isP2Insert;
 
     // INSERT: ethereum address will be taken from sender leaf
     // otherwise, ethereum address receiver account would be selected
     component s2EthAddr = Mux1();
     s2EthAddr.c[0] <== ethAddr2;
     s2EthAddr.c[1] <== s1EthAddr.out;
-    s2EthAddr.s <== states.s2;
+    s2EthAddr.s <== states.isP2Insert;
 
     // INSERT: token identifier will be taken from sender leaf
     // otherwise, token identifier receiver account would be selected
     component s2TokenID = Mux1();
     s2TokenID.c[0] <== tokenID2;
     s2TokenID.c[1] <== s1TokenID.out;
-    s2TokenID.s <== states.s2;
+    s2TokenID.s <== states.isP2Insert;
 
     // INSERT: procesor old key will be taken from 'oldKey2' which is set by the coordinator
     // otherwise, key is selected from states depending on tx type
     component s2OldKey = Mux1();
     s2OldKey.c[0] <== states.key2;
     s2OldKey.c[1] <== oldKey2;
-    s2OldKey.s <== states.s2;
+    s2OldKey.s <== states.isP2Insert;
 
     // INSERT: processor state hash would be taken from 'oldValue1' which is set by the coordinator
     // otherwise, state hash is selected from states depending on tx type
     component s2OldValue = Mux1();
     s2OldValue.c[0] <== oldSt2Hash.out;
     s2OldValue.c[1] <== oldValue2;
-    s2OldValue.s <== states.s2;
+    s2OldValue.s <== states.isP2Insert;
 
     // F - verify eddsa signature
     ////////
@@ -559,8 +559,8 @@ template RollupTx(nLevels, maxFeeTx) {
     processor2.isOld0 <== isOld0_2;
     processor2.newKey <== states.key2;
     processor2.newValue <== newSt2Hash.out;
-    processor2.fnc[0] <== states.P2_fnc0*balanceUpdater.update2;
-    processor2.fnc[1] <== states.P2_fnc1*balanceUpdater.update2;
+    processor2.fnc[0] <== states.P2_fnc0*balanceUpdater.isP2Nop;
+    processor2.fnc[1] <== states.P2_fnc1*balanceUpdater.isP2Nop;
 
     // K - select output roots
     ////////

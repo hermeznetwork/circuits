@@ -13,13 +13,14 @@ It could be found in: https://docs.hermez.io/#/developers/protocol/hermez-protoc
   - `lib`
     - hash-state
     - decode-float
-    - fee-table-selector
+    - mux256
     - utils-bjj
   - decode-tx
   - fee-accumulator
   - rq-tx-verifier
   - hash-inputs
   - fee-tx
+  - compute-fee
   - balance-updater
   - rollup-tx-states
   - rollup-tx

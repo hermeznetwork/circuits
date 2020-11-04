@@ -54,7 +54,7 @@ describe("Test rollup-main", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_7821w6GhYUoZ1oRp";
+        // const pathTmp = "/tmp/circom_22040Dr328W03HHn3";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main.test.circom"));
     });
 
@@ -150,7 +150,7 @@ describe("Test rollup-main", function () {
             fromEthAddr: account3.ethAddr,
             toIdx: account2.idx,
             amount: 100,
-            userFee: 200,
+            userFee: 126,
             onChain: true
         };
 
@@ -356,7 +356,7 @@ describe("Test rollup-main", function () {
             fromEthAddr: 0,
             toIdx: account2.idx,
             amount: 150,
-            userFee: 200,
+            userFee: 126,
             onChain: 0,
             nonce: 0,
         };
@@ -369,7 +369,7 @@ describe("Test rollup-main", function () {
             fromEthAddr: 0,
             toIdx: Constants.exitIdx,
             amount: 100,
-            userFee: 179,
+            userFee: 68,
             nonce: 0,
             onChain: 0,
         };
@@ -382,7 +382,7 @@ describe("Test rollup-main", function () {
             fromEthAddr: 0,
             toIdx: account1.idx,
             amount: 150,
-            userFee: 220,
+            userFee: 184,
             onChain: 0,
             nonce: 1,
         };
@@ -409,7 +409,7 @@ describe("Test rollup-main", function () {
 
         await assertBatch(bb2, circuit);
         await assertBatch(bb3, circuit);
-        await assertAccountsBalances(accounts, [733, 1049, 118], rollupDB);
+        await assertAccountsBalances(accounts, [722, 1049, 129], rollupDB);
     });
 
     it("Should check L2 'transfer to ethAddr' & L2 'transfer to Bjj' txs", async () => {
@@ -442,7 +442,7 @@ describe("Test rollup-main", function () {
             tokenID: 1,
             amount: 500,
             nonce: 0,
-            userFee: 221,
+            userFee: 184,
         };
 
         const tx2 = {
@@ -470,7 +470,7 @@ describe("Test rollup-main", function () {
         await rollupDB.consolidate(bb2);
 
         await assertBatch(bb2, circuit);
-        await assertAccountsBalances(accounts, [1400, 226, 374], rollupDB);
+        await assertAccountsBalances(accounts, [1400, 222, 378], rollupDB);
     });
 
     it("Should check error L2 'transfer' with rqOffset txs", async () => {
@@ -493,7 +493,7 @@ describe("Test rollup-main", function () {
             fromEthAddr: 0,
             toIdx: account2.idx,
             amount: 150,
-            userFee: 200,
+            userFee: 126,
             onChain: 0,
             nonce: 0,
         };
@@ -506,7 +506,7 @@ describe("Test rollup-main", function () {
             fromEthAddr: 0,
             toIdx: account1.idx,
             amount: 100,
-            userFee: 200,
+            userFee: 126,
             nonce: 0,
             onChain: 0,
         };

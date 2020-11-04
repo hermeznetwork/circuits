@@ -53,7 +53,7 @@ describe("Test rollup-main L1 transactions", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_23131gdaXATTBRDyD";
+        // const pathTmp = "/tmp/circom_21070WhkniXNYdFYf";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main-L1.test.circom"));
     });
 
@@ -296,7 +296,7 @@ describe("Test rollup-main L1 transactions", function () {
             fromEthAddr: account1.ethAddr,
             toIdx: account3.idx,
             amountF: 100,
-            userFee: 200,
+            userFee: 184,
             onChain: true
         };
 
