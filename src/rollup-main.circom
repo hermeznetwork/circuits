@@ -17,13 +17,14 @@ include "./fee-tx.circom";
  * @input oldLastIdx - {Uint48} - old last index assigned
  * @input oldStateRoot - {Field} - initial state root
  * @input globalChainID - {Uint16} - global chain identifier
+ * @input currentNumBatch - {Uint32} - current batch number processed
  * @input feeIdxs[maxFeeTx] - {Array(Uint48)} - merkle tree indexes to receive fees
  * @input feePlanTokens[maxFeeTx] - {Array(Uint32)} - tokens identifiers of fees accumulated
  * @input imOnChain[nTx-1] - {Array(Bool)} - intermediary signals: decode transaction output onChain flag
- * @input imOutIdx[nTx-1] - {Array(Uint40)} - intermediary signals: decode transaction final index assigned
+ * @input imOutIdx[nTx-1] - {Array(Uint48)} - intermediary signals: decode transaction final index assigned
  * @input imStateRoot[nTx-1] - {Array(Field)} - intermediary signals: transaction final state root
  * @input imExitRoot[nTx-1] - {Array(Field)} - intermediary signals: transaction final exit root
- * @input imAccFeeOut[nTx-1][maxFeeTx] - {Array(Uint192)} - intermediary signals: transaction final accumlate fees
+ * @input imAccFeeOut[nTx-1][maxFeeTx] - {Array[Array(Uint192)]} - intermediary signals: transaction final accumulated fees
  * @input imStateRootFee[maxFeeTx - 1] - {Array(Field)} - intermediary signals: transaction fee final state root
  * @input imInitStateRootFee - {Field} - intermediary signals: final state root of all rollup transactions
  * @input imFinalAccFee[maxFeeTx] - {Array(Field)} - intermediary signals: final fees accumulated of all rollup transactions
@@ -35,7 +36,8 @@ include "./fee-tx.circom";
  * @input auxToIdx[nTx] - {Array(Uint48)} - auxiliary index when signed index receiver is set to null
  * @input toBjjAy[nTx] - {Array(Field)} - bayjubjub y coordinate receiver
  * @input toEthAddr[nTx] - {Array(Uint160)} - ethereum address receiver
- * @input onChain[nTx] - {Array(Bool)} - determines if the transacion is L1 or L2
+ * @input maxNumBatch - {Array[Uint32]} - maximum allowed batch number when the transaction can be processed
+ * @input onChain[nTx] - {Array(Bool)} - determines if the transaction is L1 or L2
  * @input newAccount[nTx] - {Array(Bool)} - determines if transaction creates a new account
  * @input rqTxCompressedDataV2[nTx] - {Array(Uint193)} - requested encode transaction fields together version 2
  * @input rqToEthAddr[nTx] - {Array(Uint160)} - requested ethereum address receiver
@@ -45,14 +47,14 @@ include "./fee-tx.circom";
  * @input r8y[nTx] - {Array(Field)} - eddsa signature field
  * @input loadAmountF[nTx] - {Array(Uint16)} - amount to deposit from L1 to L2 encoded as float16
  * @input fromEthAddr[nTx] - {Array(Uint160)} - ethereum address sender
- * @input fromBjjCompressed[nTx][256] - {Array(Bool)} - babyjubjub compressed sender
+ * @input fromBjjCompressed[nTx][256] - {Array[Array(Bool)]} - babyjubjub compressed sender
  * @input tokenID1[nTx] - {Array(Uint32)} - tokenID of the sender leaf
  * @input nonce1[nTx] - {Array(Uint40)} - nonce of the sender leaf
  * @input sign1[nTx] - {Array(Bool)} - sign of the sender leaf
  * @input balance1[nTx] - {Array(Uint192)} - balance of the sender leaf
  * @input ay1[nTx] - {Array(Field)} - ay of the sender leaf
  * @input ethAddr1[nTx] - {Array(Uint160)} - ethAddr of the sender leaf
- * @input siblings1[nTx][nLevels + 1] - {Array(Field)} - siblings merkle proof of the sender leaf
+ * @input siblings1[nTx][nLevels + 1] - {Array[Array(Field)]} - siblings merkle proof of the sender leaf
  * @input isOld0_1[nTx] - {Array(Bool)} - flag to require old key - value
  * @input oldKey1[nTx] - {Array(Uint48)} - old key of the sender leaf
  * @input oldValue1[nTx] - {Array(Field)} - old value of the sender leaf
@@ -62,7 +64,7 @@ include "./fee-tx.circom";
  * @input balance2[nTx] - {Array(Uint192)} - balance of the receiver leaf
  * @input ay2[nTx] - {Array(Field)} - ay of the receiver leaf
  * @input ethAddr2[nTx] - {Array(Uint160)} - ethAddr of the receiver leaf
- * @input siblings2[nTx][nLevels + 1] - {Array(Field)} - siblings merkle proof of the receiver leaf
+ * @input siblings2[nTx][nLevels + 1] - {Array[Array(Field)]} - siblings merkle proof of the receiver leaf
  * @input isOld0_2[nTx] - {Array(Bool)} - flag to require old key - value
  * @input oldKey2[nTx] - {Array(Uint48)} - old key of the sender leaf
  * @input oldValue2[nTx] - {Array(Field)} - old value of the sender leaf
@@ -72,7 +74,7 @@ include "./fee-tx.circom";
  * @input balance3[maxFeeTx] - {Array(Uint192)} - balance of leafs feeIdxs
  * @input ay3[maxFeeTx] - {Array(Field)} - ay of leafs feeIdxs
  * @input ethAddr3[maxFeeTx] - {Array(Uint160)} - ethAddr of leafs feeIdxs
- * @input siblings3[nLevels + 1] - {Array(Field)} - siblings merkle proof of leafs Idxs
+ * @input siblings3[maxFeeTx][nLevels + 1] - {Array[Array(Field)}} - siblings merkle proof of leafs Idxs
  * @output hashGlobalInputs - {Field} - hash of all pretended input signals
  */
 template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
@@ -101,6 +103,8 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     signal private input oldLastIdx;
     signal private input oldStateRoot;
     signal private input globalChainID;
+    signal private input currentNumBatch;
+
     signal private input feeIdxs[maxFeeTx];
 
     // accumulate fees
@@ -131,6 +135,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     signal private input toBjjAy[nTx];
     signal private input toEthAddr[nTx];
 
+    signal private input maxNumBatch[nTx];
     signal private input onChain[nTx];
     signal private input newAccount[nTx];
     signal private input rqOffset[nTx];
@@ -236,18 +241,19 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         }
 
         decodeTx[i].globalChainID <== globalChainID;
+        decodeTx[i].currentNumBatch <== currentNumBatch;
+        decodeTx[i].maxNumBatch <== maxNumBatch[i];
         decodeTx[i].onChain <== onChain[i];
         decodeTx[i].newAccount <== newAccount[i];
         decodeTx[i].auxFromIdx <== auxFromIdx[i];
     }
 
-    // Check txCompressedDataV2
+    // C - check integrity decode intermediary signals
+    ////////
     for (i = 0; i < nTx; i++) {
         decodeTx[i].txCompressedDataV2 === txCompressedDataV2[i];
     }
 
-    // C - check integrity decode intermediary signals
-    ////////
     for (i = 0; i < nTx - 1; i++) {
         decodeTx[i].onChain === imOnChain[i];
         decodeTx[i].outIdx === imOutIdx[i];
@@ -429,17 +435,26 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     hasherInputs.newStateRoot <== feeTx[maxFeeTx-1].newStateRoot;
     hasherInputs.newExitRoot <== rollupTx[nTx-1].newExitRoot;
 
-    var bitsSingleL1TxsData = (2*48 + 32 + 16 + 16 + 256 + 160);
+    var bitsL1TxFullData = (2*48 + 32 + 16 + 16 + 256 + 160);
     for (i = 0; i < maxL1Tx; i++){
-        for (j = 0; j < bitsSingleL1TxsData; j++ ){
-            hasherInputs.L1TxsData[i*bitsSingleL1TxsData + j] <== decodeTx[i].L1TxData[j];
+        for (j = 0; j < bitsL1TxFullData; j++ ){
+            hasherInputs.L1TxsFullData[i*bitsL1TxFullData + j] <== decodeTx[i].L1TxFullData[j];
         }
     }
 
-    var bitsSingleL2TxsData = (2*nLevels + 16 + 8);
+    var bitsL1L2TxData = (2*nLevels + 16 + 8);
     for (i = 0; i < nTx; i++){
-        for (j = 0; j < bitsSingleL2TxsData; j++ ){
-            hasherInputs.L2TxsData[i*bitsSingleL2TxsData + j] <== decodeTx[i].L2TxData[j];
+        // add fromIdx and toIdx
+        for (j = 0; j < 2*nLevels; j++ ){
+            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j];
+        }
+        // add amountF
+        for (j = 2*nLevels; j < (2*nLevels + 16); j++ ){
+            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j] * (1 - rollupTx[i].isAmountNullified);
+        }
+        // add fee
+        for (j = (2*nLevels + 16); j < (2*nLevels + 16 + 8); j++ ){
+            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j];
         }
     }
 
@@ -448,6 +463,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     }
 
     hasherInputs.globalChainID <== globalChainID;
+    hasherInputs.currentNumBatch <== currentNumBatch;
 
     // set public output
     hashGlobalInputs <== hasherInputs.hashInputsOut;

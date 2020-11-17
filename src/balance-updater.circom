@@ -11,7 +11,7 @@ include "./compute-fee.circom";
  * @input amount - {Uint192} - amount to transfer from L2 to L2
  * @input loadAmount - {Uint192} - amount to deposit from L1 to L2
  * @input feeSelector - {Uint8} - user selector fee
- * @input onChain - {Bool} - determines if the transacion is L1 or L2
+ * @input onChain - {Bool} - determines if the transaction is L1 or L2
  * @input nop- {Bool} - determines if the transfer amount and fees are considered 0
  * @input nullifyLoadAmount - {Bool} - determines if loadAmount is considered to be 0
  * @input nullifyAmount - {Bool} - determines if amount is considered to be 0
@@ -19,6 +19,7 @@ include "./compute-fee.circom";
  * @output newStBalanceReceiver - {Uint192} - final balance receiver
  * @output isP2Nop - {Bool} - determines if processor 2 performs a NOP function
  * @output fee2Charge - {Uint192} - effective transaction fee
+ * @output isAmountNullified - {Bool} - determines if the amount is nullified
  */
 template BalanceUpdater() {
     signal input oldStBalanceSender;
@@ -35,6 +36,7 @@ template BalanceUpdater() {
     signal output newStBalanceReceiver;
     signal output isP2Nop;
     signal output fee2Charge;
+    signal output isAmountNullified;
 
     signal underflowOk;         // 1 if sender balance is > 0
     signal effectiveAmount1;    // original amount to transfer. Set to 0 if tx is NOP.
@@ -88,9 +90,14 @@ template BalanceUpdater() {
     newStBalanceSender <== oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount3 - fee2Charge;
     newStBalanceReceiver <== oldStBalanceReceiver + effectiveAmount3;
 
-    // check if amount to perform is 0
+    // check if original amount to process is 0
     component effectiveAmountIsZero = IsZero();
     effectiveAmountIsZero.in <== effectiveAmount1;
+
+    // check if amount is nullified
+    // this signal is used in L1 invalid transactions where the amount used would not be inserted in txsData since L1Tx is not valid or
+    // triggers underflow
+    isAmountNullified <== 1 - (1 - nullifyAmount)*underflowOk;
 
     // Set NOP fucntion on processor 2 (receiver account) if original amount to transfer is 0 since
     // receiver account does not change and coordinator does not need to provide

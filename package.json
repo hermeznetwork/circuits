@@ -4,7 +4,7 @@
   "description": "zkSNARK circuit implementing hermez protocol",
   "scripts": {
     "setup": "npm i",
-    "eslint": "npx eslint test/**",
+    "eslint": "npx eslint test/** tools/*.js tools/helpers/*.js",
     "test": "npx mocha --max-old-space-size=4096 ./test/*.test.js && npx mocha ./test/lib/*.test.js"
   },
   "keywords": [
@@ -21,7 +21,7 @@
   "author": "HermezDAO",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@hermeznetwork/commonjs": "0.0.3",
+    "@hermeznetwork/commonjs": "0.0.4",
     "circom": "^0.5.27",
     "circom_runtime": "^0.1.5",
     "circomlib": "^0.2.4",

@@ -13,10 +13,11 @@ include "../node_modules/circomlib/circuits/bitify.circom";
  * @input oldStateRoot - {Field} - old state root
  * @input newStateRoot - {Field} - new state root
  * @input newExitRoot - {Field} - new exit root
- * @input L1TxsData[maxL1Tx * (2*nLevels + 32 + 16 + 16 + 256 + 160)] - {Array[Bool]} - bits L1 data
- * @input L2TxsData[nTx * (2*nLevels + 16 + 8)]	- {Array[Bool]} - bits L2 transaction data-availability
- * @input feeTxsData[maxFeeTx] - {Array[nLevels]} - all index accounts to receive accumulated fees
+ * @input L1TxsFullData[maxL1Tx * (2*nLevels + 32 + 16 + 16 + 256 + 160)] - {Array[Bool]} - bits L1 full data
+ * @input L1L2TxsData[nTx * (2*nLevels + 16 + 8)]	- {Array[Bool]} - bits L1-L2 transaction data-availability
+ * @input feeTxsData[maxFeeTx] - {Array[Uint48]} - all index accounts to receive accumulated fees
  * @input globalChainID	- {Uint16} - global chain identifier
+ * @input currentNumBatch - {Uint32} - current batch number processed
  * @output hashInputsOut - {Field} - sha256 hash of pretended public inputs
  */
 template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
@@ -25,8 +26,9 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     var bitsIndex = nLevels;
     var bitsRoots = 256;
     var bitsChainID = 16;
-    var bitsL1TxsData = maxL1Tx * (2*bitsIndexMax + 32 + 16 + 16 + 256 + 160);
-    var bitsL2TxsData = nTx * (2*nLevels + 16 + 8);
+    var bitsCurrentNumBatch = 32;
+    var bitsL1TxsFullData = maxL1Tx * (2*bitsIndexMax + 32 + 16 + 16 + 256 + 160);
+    var bitsL1L2TxsData = nTx * (2*nLevels + 16 + 8);
     var bitsFeeTxsData = maxFeeTx * bitsIndex;
 
     // inputs
@@ -35,10 +37,11 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     signal input oldStateRoot;
     signal input newStateRoot;
     signal input newExitRoot;
-    signal input L1TxsData[bitsL1TxsData]; // already in bits
-    signal input L2TxsData[bitsL2TxsData]; // already in bits
+    signal input L1TxsFullData[bitsL1TxsFullData]; // already in bits
+    signal input L1L2TxsData[bitsL1L2TxsData]; // already in bits
     signal input feeTxsData[maxFeeTx]; // array of merkle tree indexes
     signal input globalChainID;
+    signal input currentNumBatch;
 
     // output
     signal output hashInputsOut;
@@ -99,9 +102,13 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     component n2bChainID = Num2Bits(16);
     n2bChainID.in <== globalChainID;
 
+    // currentNumBatch
+    component n2bCurrentNumBatch = Num2Bits(32);
+    n2bCurrentNumBatch.in <== currentNumBatch;
+
     // build SHA256 with all inputs
     ////////
-    var totalBitsSha256 = 2*bitsIndexMax + 3*bitsRoots + bitsChainID + bitsL1TxsData + bitsL2TxsData + bitsFeeTxsData;
+    var totalBitsSha256 = 2*bitsIndexMax + 3*bitsRoots + bitsChainID + bitsCurrentNumBatch + bitsL1TxsFullData + bitsL1L2TxsData + bitsFeeTxsData;
 
     component inputsHasher = Sha256(totalBitsSha256);
 
@@ -137,17 +144,17 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     }
     offset = offset + bitsRoots;
 
-    // add L1TxsData
-    for (i = 0; i < bitsL1TxsData; i++) {
-        inputsHasher.in[offset + i] <== L1TxsData[i];
+    // add L1TxsFullData
+    for (i = 0; i < bitsL1TxsFullData; i++) {
+        inputsHasher.in[offset + i] <== L1TxsFullData[i];
     }
-    offset = offset + bitsL1TxsData;
+    offset = offset + bitsL1TxsFullData;
 
-    // add L2TxsData
-    for (i = 0; i < bitsL2TxsData; i++) {
-        inputsHasher.in[offset + i] <== L2TxsData[i];
+    // add L1L2TxsData
+    for (i = 0; i < bitsL1L2TxsData; i++) {
+        inputsHasher.in[offset + i] <== L1L2TxsData[i];
     }
-    offset = offset + bitsL2TxsData;
+    offset = offset + bitsL1L2TxsData;
 
     // add feeTxData
     for (i = 0; i < maxFeeTx; i++){
@@ -160,6 +167,12 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     // add chainID
     for (i = 0; i < bitsChainID; i++) {
         inputsHasher.in[offset + bitsChainID - 1 - i] <== n2bChainID.out[i];
+    }
+    offset = offset + bitsChainID;
+
+    // add currentNumBatch
+    for (i = 0; i < bitsCurrentNumBatch; i++) {
+        inputsHasher.in[offset + bitsCurrentNumBatch - 1 - i] <== n2bCurrentNumBatch.out[i];
     }
 
     // get hash output

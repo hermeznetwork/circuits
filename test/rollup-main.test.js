@@ -54,7 +54,7 @@ describe("Test rollup-main", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_22040Dr328W03HHn3";
+        // const pathTmp = "/tmp/circom_2237qpXQvEiiblzU";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main.test.circom"));
     });
 
@@ -550,5 +550,66 @@ describe("Test rollup-main", function () {
         await bb4.build();
 
         await assertBatch(bb4, circuit);
+    });
+
+    it("Should check L2 'transfer' with maxNumBatch", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await depositTx(bb, account2, 1, 1000);
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        // transaction with: maxNumBatch > currentNumBatch
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: account2.idx,
+            amount: 100,
+            userFee: 0,
+            onChain: 0,
+            nonce: 0,
+            maxNumBatch: Number(bb2.currentNumBatch) + 1
+        };
+
+        account1.signTx(tx);
+        bb2.addTx(tx);
+        await bb2.build();
+        await assertBatch(bb2, circuit);
+
+        // transaction with: maxNumBatch = currentNumBatch
+        const bb3 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        tx.maxNumBatch = Number(bb3.currentNumBatch);
+        account1.signTx(tx);
+        bb3.addTx(tx);
+        await bb3.build();
+        await assertBatch(bb3, circuit);
+
+        // transaction with: maxNumBatch < currentNumBatch
+        const bb4 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        tx.maxNumBatch = Number(bb4.currentNumBatch);
+        // sign correct maxNumBatch transaction
+        account1.signTx(tx);
+        bb4.addTx(tx);
+        await bb4.build();
+        const input = bb4.getInput();
+
+        // manipulate input with maxNumBatch < currentNumBatch
+        const txIndex = 0;
+        input.maxNumBatch[txIndex] = Number(bb4.currentNumBatch) - 1;
+
+        try {
+            await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+            expect(true).to.be.equal(false);
+        } catch (error){
+            expect(error.message.includes("Constraint doesn't match")).to.be.equal(true);
+        }
     });
 });

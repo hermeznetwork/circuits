@@ -14,7 +14,7 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  * @input newExit - {Bool} - determines if the transaction create a new account in the exit tree
  * @input loadAmount - {Uint192} - amount to deposit from L1 to L2
  * @input newAccount - {Bool} - determines if transaction creates a new account
- * @input onChain - {Bool} - determines if the transacion is L1 or L2
+ * @input onChain - {Bool} - determines if the transaction is L1 or L2
  * @input fromEthAddr - {Uint160} - ethereum address sender
  * @input ethAddr1 - {Uint160} - ethereum address of sender leaf
  * @input tokenID - {Uint32} - tokenID signed in the transaction

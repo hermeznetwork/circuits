@@ -35,7 +35,7 @@ include "./lib/decode-float.circom"
  * @input nonce - {Uint40} - nonce signed in the transaction
  * @input userFee - {Uint16} - user fee selector
  * @input rqOffset - {Uint3} - relative linked transaction
- * @input onChain - {Bool} - determines if the transacion is L1 or L2
+ * @input onChain - {Bool} - determines if the transaction is L1 or L2
  * @input newAccount - {Bool} - determines if transaction creates a new account
  * @input rqTxCompressedDataV2 - {Uint193} - requested encode transaction fields together version 2
  * @input rqToEthAddr - {Uint160} - requested ethereum address receiver
@@ -69,6 +69,7 @@ include "./lib/decode-float.circom"
  * @input oldValue2 - {Field} - old value of the sender leaf
  * @input oldStateRoot - {Field} - initial state root
  * @input oldExitRoot - {Field} - initial exit root
+ * @output isAmountNullified - {Bool} - determines if the amount is nullified
  * @output accFeeOut[maxFeeTx] - {Array(Uint192)} - final fees accumulated
  * @output newStateRoot - {Field} - final state root
  * @output newExitRoot - {Field} - final exit root
@@ -167,6 +168,9 @@ template RollupTx(nLevels, maxFeeTx) {
 
     signal input oldExitRoot;
     signal output newExitRoot;
+
+    // Nullifier amount
+    signal output isAmountNullified;
 
     var i;
 
@@ -489,6 +493,7 @@ template RollupTx(nLevels, maxFeeTx) {
     balanceUpdater.nullifyLoadAmount <== states.nullifyLoadAmount;
     balanceUpdater.nullifyAmount <== states.nullifyAmount;
 
+    isAmountNullified <== balanceUpdater.isAmountNullified;
     // H - accumulate fees
     ////////
     component feeAccumulator = FeeAccumulator(maxFeeTx);
