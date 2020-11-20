@@ -36,4 +36,4 @@ WARNING
 All code here is in WIP
 
 ## License
-`circuits` is part of the iden3 project copyright 2020 HermezDAO and published with AGPL-3 license. Please check the LICENSE file for more details.
+`circuits` is part of the Hermez project copyright 2020 HermezDAO and published with AGPL-3 license. Please check the LICENSE file for more details.
