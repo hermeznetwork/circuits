@@ -149,10 +149,9 @@ async function computeZkey(nTx, nLevels, maxL1Tx, maxFeeTx, ptauFile){
     const pathName = path.join(__dirname, `../rollup-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}`);
     const r1csName = `${circuitName}-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}.r1cs`;
     const zkeyName = `${circuitName}-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}.zkey`;
-    const ptauName = ptauFile == undefined ? 
-		         "/home/tester/contracts-circuits/pot23_final.ptau" : 
-		         ptauFile;
-    const ptauProvided = ptauFile == undefined ? 0 : 1;
+    const ptauName = (ptauFile == undefined) ?
+        "/home/tester/contracts-circuits/pot23_final.ptau" :
+        ptauFile;
 
     if (!fs.existsSync(path.join(pathName, r1csName))) {
         console.error(`Constraint file ${path.join(pathName,r1csName)} doesnt exist`);
@@ -179,10 +178,10 @@ async function computeZkey(nTx, nLevels, maxL1Tx, maxFeeTx, ptauFile){
     ${ptauName} \
     ${pathName,zkeyName}`;
 
-    out = process.exec(zkeyCmd);
+    const out = process.exec(zkeyCmd);
     out.stdout.on("data", (data) => {
-                console.log(data);
-           });
+        console.log(data);
+    });
 }
 
 async function generateSolidityVerifier(nTx, nLevels, maxL1Tx, maxFeeTx){
@@ -192,7 +191,7 @@ async function generateSolidityVerifier(nTx, nLevels, maxL1Tx, maxFeeTx){
 
     if (!fs.existsSync(path.join(pathName, zkeyName))) {
         console.log(`ZKey file ${path.join(pathName,zkeyName)} doesnt exist`);
-	return;
+        return;
     }
 
     const cmd = `snarkjs zkey export solidityverifier \

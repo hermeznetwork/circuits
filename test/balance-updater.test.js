@@ -50,6 +50,7 @@ describe("Test balance-updater", function () {
             newStBalanceReceiver: Scalar.add(input.oldStBalanceReceiver, input.amount),
             fee2Charge: feeApplied,
             isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
+            isAmountNullified: 0,
         };
 
         await circuit.assertOut(w, output);
@@ -77,6 +78,7 @@ describe("Test balance-updater", function () {
             newStBalanceReceiver: Scalar.e(input.oldStBalanceReceiver),
             fee2Charge: feeApplied,
             isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
+            isAmountNullified: 0,
         };
 
         await circuit.assertOut(w, output);
@@ -104,6 +106,7 @@ describe("Test balance-updater", function () {
             newStBalanceReceiver: Scalar.add(input.oldStBalanceReceiver, input.amount),
             fee2Charge: feeApplied,
             isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
+            isAmountNullified: 0,
         };
 
         await circuit.assertOut(w, output);
@@ -131,6 +134,7 @@ describe("Test balance-updater", function () {
             newStBalanceReceiver: input.oldStBalanceReceiver,
             fee2Charge: feeApplied,
             isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
+            isAmountNullified: 1,
         };
 
         await circuit.assertOut(w, output);
@@ -158,6 +162,7 @@ describe("Test balance-updater", function () {
             newStBalanceReceiver: Scalar.e(input.oldStBalanceReceiver),
             fee2Charge: feeApplied,
             isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
+            isAmountNullified: 1,
         };
 
         await circuit.assertOut(w, output);

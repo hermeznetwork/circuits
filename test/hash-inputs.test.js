@@ -31,7 +31,7 @@ describe("Test hash-inputs", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_62663mheTW3S1eG5";
+        // const pathTmp = "/tmp/circom_31396TW55g3Y6rPLh";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "hash-inputs.test.circom"));
     });
 
@@ -47,16 +47,16 @@ describe("Test hash-inputs", function () {
         bb.totalFeeTransactions = 1;
         await bb.build();
 
-        const L1TxsDataScalar = Scalar.fromString(bb.getL1TxsData(), 16);
-        const L1TxsDataB = Scalar.bits(L1TxsDataScalar);
-        while(L1TxsDataB.length < (maxL1Tx * bb.L1TxB)){
-            L1TxsDataB.unshift(0);
+        const L1TxsFullDataScalar = Scalar.fromString(bb.getL1TxsFullData(), 16);
+        const L1TxsFullDataB = Scalar.bits(L1TxsFullDataScalar);
+        while(L1TxsFullDataB.length < (maxL1Tx * bb.L1TxFullB)){
+            L1TxsFullDataB.unshift(0);
         }
 
-        const L2TxsDataScalar = Scalar.fromString(bb.getL2TxsData(), 16);
-        const L2TxsDataB = Scalar.bits(L2TxsDataScalar);
-        while(L2TxsDataB.length < (nTx * bb.L2TxB)){
-            L2TxsDataB.unshift(0);
+        const L1L2TxsDataScalar = Scalar.fromString(bb.getL1L2TxsData(), 16);
+        const L1L2TxsDataB = Scalar.bits(L1L2TxsDataScalar);
+        while(L1L2TxsDataB.length < (nTx * bb.L1L2TxDataB)){
+            L1L2TxsDataB.unshift(0);
         }
 
         const input = {
@@ -65,10 +65,11 @@ describe("Test hash-inputs", function () {
             oldStateRoot: bb.getOldStateRoot(),
             newStateRoot: bb.getNewStateRoot(),
             newExitRoot: bb.getNewExitRoot(),
-            L1TxsData: L1TxsDataB,
-            L2TxsData: L2TxsDataB,
+            L1TxsFullData: L1TxsFullDataB,
+            L1L2TxsData: L1L2TxsDataB,
             feeTxsData: bb.input.feeIdxs,
             globalChainID: bb.chainID,
+            currentNumBatch: bb.currentNumBatch,
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -104,6 +105,7 @@ describe("Test hash-inputs", function () {
             amount: Scalar.e(50),
             nonce: 0,
             userFee: 126, // effective fee is 4
+            maxNumBatch: 7,
         };
 
         account1.signTx(tx);
@@ -112,16 +114,16 @@ describe("Test hash-inputs", function () {
         bb.totalFeeTransactions = 1;
         await bb.build();
 
-        const L1TxsDataScalar = Scalar.fromString(bb.getL1TxsData(), 16);
+        const L1TxsDataScalar = Scalar.fromString(bb.getL1TxsFullData(), 16);
         const L1TxsDataB = Scalar.bits(L1TxsDataScalar).reverse();
-        while(L1TxsDataB.length < (maxL1Tx * bb.L1TxB)){
+        while(L1TxsDataB.length < (maxL1Tx * bb.L1TxFullB)){
             L1TxsDataB.unshift(0);
         }
 
-        const L2TxsDataScalar = Scalar.fromString(bb.getL2TxsData(), 16);
-        const L2TxsDataB = Scalar.bits(L2TxsDataScalar).reverse();
-        while(L2TxsDataB.length < (nTx * bb.L2TxB)){
-            L2TxsDataB.unshift(0);
+        const txsDataScalar = Scalar.fromString(bb.getL1L2TxsData(), 16);
+        const txsDataB = Scalar.bits(txsDataScalar).reverse();
+        while(txsDataB.length < (nTx * bb.L1L2TxDataB)){
+            txsDataB.unshift(0);
         }
 
         const input = {
@@ -130,10 +132,11 @@ describe("Test hash-inputs", function () {
             oldStateRoot: bb.getOldStateRoot(),
             newStateRoot: bb.getNewStateRoot(),
             newExitRoot: bb.getNewExitRoot(),
-            L1TxsData: L1TxsDataB,
-            L2TxsData: L2TxsDataB,
+            L1TxsFullData: L1TxsDataB,
+            L1L2TxsData: txsDataB,
             feeTxsData: bb.input.feeIdxs,
             globalChainID: bb.chainID,
+            currentNumBatch: bb.currentNumBatch
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});

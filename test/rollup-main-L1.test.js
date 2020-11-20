@@ -53,7 +53,7 @@ describe("Test rollup-main L1 transactions", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_21070WhkniXNYdFYf";
+        // const pathTmp = "/tmp/circom_30968hGUXakefukFo";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main-L1.test.circom"));
     });
 

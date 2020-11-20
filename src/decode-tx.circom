@@ -11,6 +11,7 @@ include "./lib/decode-float.circom";
  * @param nLevels - merkle tree depth
  * @input previousOnChain - {Bool} - determines if previous transaction is L1
  * @input txCompressedData - {Uint241} - encode transaction fields
+ * @input maxNumBatch - {Uint32} - maximum allowed batch number when the transaction can be processed
  * @input toEthAddr - {Uint160} - ethereum address receiver
  * @input toBjjAy - {Field} - babyjubjub Y coordinate receiver
  * @input rqTxCompressedDataV2 - {Uint193} -requested encode transaction fields version2
@@ -20,13 +21,14 @@ include "./lib/decode-float.circom";
  * @input fromBjjCompressed[256] - {Array[Bool]} - babyjubjub compressed sender
  * @input loadAmountF - {Uint16} - amount to deposit from L1 to L2 encoded as float16
  * @input globalChainID - {Uint16} - global chain identifier
+ * @input currentNumBatch - {Uint32} - current batch number
  * @input onChain - {Bool} - determines if the transaction is L1 or L2
  * @input newAccount - {Bool} - determines if transaction creates a new account
  * @input auxFromIdx - {Uint48} - auxiliary index to create accounts
  * @input inIdx  - {Uint48} - old last index assigned
- * @output L2TxData[nLevels*2 + 16 + 8] - {Array[Bool]} - L2 data availability
+ * @output L1L2TxData[nLevels*2 + 16 + 8] - {Array[Bool]} - L1-L2 data availability
  * @output txCompressedDataV2 - {Uint193} - encode transaction fields together version 2
- * @output L1TxData - {Array[Bool]} - L1 Data
+ * @output L1TxFullData - {Array[Bool]} - L1 full data
  * @output outIdx - {Uint48} - new last index assigned
  * @output fromIdx - {Uint48} - index sender
  * @output toIdx - {Uint48} - index receiver
@@ -41,6 +43,7 @@ template DecodeTx(nLevels) {
     // tx L2 fields
     signal input previousOnChain;
     signal input txCompressedData; // data shared with L1 tx
+    signal input maxNumBatch;
     signal input toEthAddr;
     signal input toBjjAy;
     signal input rqTxCompressedDataV2;
@@ -48,7 +51,7 @@ template DecodeTx(nLevels) {
     signal input rqToBjjAy;
 
     // fromIdx | toIdx | amountF | userFee
-    signal output L2TxData[nLevels*2 + 16 + 8];
+    signal output L1L2TxData[nLevels*2 + 16 + 8];
     signal output txCompressedDataV2;
 
     // tx L1 fields
@@ -57,12 +60,13 @@ template DecodeTx(nLevels) {
     signal input loadAmountF;
 
     signal input globalChainID;
+    signal input currentNumBatch;
     signal input onChain;
     signal input newAccount;
     signal input auxFromIdx;
 
     // fromEthAddr | fromBjjCompressed | fromIdx | loadAmountF | amountF | tokenID | toIdx
-    signal output L1TxData[160 + 256 + 48 + 16 + 16 + 32 + 48];
+    signal output L1TxFullData[160 + 256 + 48 + 16 + 16 + 32 + 48];
 
     signal input inIdx;
     signal output outIdx;
@@ -198,30 +202,48 @@ template DecodeTx(nLevels) {
 
     b2nTxCompressedDataV2.out ==> txCompressedDataV2;
 
-    // Build L2TxData
+    // Build L1L2TxData
     ////////
     // Add fromIdx
     for (i = 0; i < nLevels; i++) {
-        L2TxData[nLevels - 1 - i] <== n2bData.out[48 + i]*(1-onChain);
+        L1L2TxData[nLevels - 1 - i] <== n2bData.out[48 + i];
     }
     // Add toIdx
     for (i = 0; i < nLevels; i++) {
-        L2TxData[nLevels*2 - 1 - i] <== n2bData.out[96 + i]*(1-onChain);
+        L1L2TxData[nLevels*2 - 1 - i] <== n2bData.out[96 + i];
     }
     // Add amountF
     for (i = 0; i < 16; i++) {
-        L2TxData[nLevels*2 + 16 - 1 - i] <== n2bData.out[144 + i]*(1-onChain);
+        L1L2TxData[nLevels*2 + 16 - 1 - i] <== n2bData.out[144 + i];
     }
     // Add fee
     for (i = 0; i < 8; i++) {
-        L2TxData[nLevels*2 + 16 + 8 - 1 - i] <== n2bData.out[232 + i]*(1-onChain);
+        L1L2TxData[nLevels*2 + 16 + 8 - 1 - i] <== n2bData.out[232 + i]*(1-onChain);
     }
 
     // Build sigL2Hash
     ////////
+    // build e_1: toEthAddr         160 bits    0..159
+    //            maxNumBatch       32 bits     160..192
+    component b2nElement1 = Bits2Num(160 + 32);
+
+    // add toEthAddr
+    component n2bToEthAddr = Num2Bits(160);
+    n2bToEthAddr.in <== toEthAddr;
+    for (i = 0; i < 160; i++) {
+        b2nElement1.in[i] <== n2bToEthAddr.out[i];
+    }
+
+    // add maxNumBatch
+    component n2bMaxNumBatch = Num2Bits(32);
+    n2bMaxNumBatch.in <== maxNumBatch;
+    for (i = 0; i < 32; i++) {
+        b2nElement1.in[160 + i] <== n2bMaxNumBatch.out[i];
+    }
+
     component hashSig = Poseidon(6);
     hashSig.inputs[0] <== txCompressedData;
-    hashSig.inputs[1] <== toEthAddr;
+    hashSig.inputs[1] <== b2nElement1.out;
     hashSig.inputs[2] <== toBjjAy;
     hashSig.inputs[3] <== rqTxCompressedDataV2;
     hashSig.inputs[4] <== rqToEthAddr;
@@ -229,45 +251,45 @@ template DecodeTx(nLevels) {
 
     hashSig.out ==> sigL2Hash;
 
-    // Build L1TxData
+    // Build L1TxFullData
     ////////
     // Add fromEthAddr
     component n2bFromEthAddr = Num2Bits(160);
     n2bFromEthAddr.in <== fromEthAddr;
     for (i = 0; i < 160; i++) {
-        L1TxData[160 - 1 - i] <== n2bFromEthAddr.out[i]*(onChain);
+        L1TxFullData[160 - 1 - i] <== n2bFromEthAddr.out[i]*(onChain);
     }
 
     // Add fromBjjCompressed
     for (i = 0; i < 256; i++) {
-        L1TxData[160 + 256 - 1 - i] <== fromBjjCompressed[i]*(onChain);
+        L1TxFullData[160 + 256 - 1 - i] <== fromBjjCompressed[i]*(onChain);
     }
 
     // Add fromIdx
     for (i = 0; i < 48; i++) {
-        L1TxData[160 + 256 + 48 - 1 - i] <== n2bData.out[48 + i]*(onChain);
+        L1TxFullData[160 + 256 + 48 - 1 - i] <== n2bData.out[48 + i]*(onChain);
     }
 
     // Add loadAmountF
     component n2bLoadAmountF = Num2Bits(16);
     n2bLoadAmountF.in <== loadAmountF;
     for (i = 0; i < 16; i++) {
-        L1TxData[160 + 256 + 48 + 16 - 1 - i] <== n2bLoadAmountF.out[i]*(onChain);
+        L1TxFullData[160 + 256 + 48 + 16 - 1 - i] <== n2bLoadAmountF.out[i]*(onChain);
     }
 
     // Add amountF
     for (i = 0; i < 16; i++) {
-        L1TxData[160 + 256 + 48 + 16 + 16 - 1 - i] <== n2bData.out[144 + i]*(onChain);
+        L1TxFullData[160 + 256 + 48 + 16 + 16 - 1 - i] <== n2bData.out[144 + i]*(onChain);
     }
 
     // Add tokenID
     for (i = 0; i < 32; i++) {
-        L1TxData[160 + 256 + 48 + 16 + 16 + 32 - 1 - i] <== n2bData.out[160 + i]*(onChain);
+        L1TxFullData[160 + 256 + 48 + 16 + 16 + 32 - 1 - i] <== n2bData.out[160 + i]*(onChain);
     }
 
     // Add toIdx
     for (i = 0; i < 48; i++) {
-        L1TxData[160 + 256 + 48 + 16 + 16 + 32 + 48 - 1 - i] <== n2bData.out[96 + i]*(onChain);
+        L1TxFullData[160 + 256 + 48 + 16 + 16 + 32 + 48 - 1 - i] <== n2bData.out[96 + i]*(onChain);
     }
 
     // Perform checks on transaction fields
@@ -303,4 +325,14 @@ template DecodeTx(nLevels) {
     constSigChecker.in[0] <== constSig;
     constSigChecker.in[1] <== CONST_SIG;
     constSigChecker.enabled <== (1 - onChain);
+
+    // checks (maxNumBatch <= currentNumBatch) if maxNumBatch != 0
+    component maxNumBatchIsZero = IsZero();
+    maxNumBatchIsZero.in <== maxNumBatch;
+
+    component isMaxNumBatchOk = GreaterEqThan(32);
+    isMaxNumBatchOk.in[0] <== maxNumBatch;
+    isMaxNumBatchOk.in[1] <== currentNumBatch;
+
+    (1 - isMaxNumBatchOk.out) * (1 - maxNumBatchIsZero.out) === 0;
 }

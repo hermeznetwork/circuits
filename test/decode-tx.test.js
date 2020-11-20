@@ -63,7 +63,9 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
-            inIdx: 0
+            inIdx: 0,
+            maxNumBatch: 0,
+            currentNumBatch: 0
         };
 
         let w = await circuit.calculateWitness(input, {logOutput: false});
@@ -108,6 +110,7 @@ describe("Test Decode Tx", function () {
             rqTxCompressedDataV2: Scalar.e("0123456789"),
             rqToEthAddr: rqAcc.ethAddr,
             rqToBjjAy: rqAcc.ay,
+            maxNumBatch: 20,
         };
 
         fromAcc.signTx(tx);
@@ -127,7 +130,9 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
-            inIdx: 0
+            inIdx: 0,
+            maxNumBatch: tx.maxNumBatch,
+            currentNumBatch: tx.maxNumBatch - 1
         };
 
         const w = await circuit.calculateWitness(input, {logOutput: false});
@@ -164,7 +169,9 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
-            inIdx: 0
+            inIdx: 0,
+            maxNumBatch: 3,
+            currentNumBatch: 3
         };
 
         // L2 --> L2
@@ -208,7 +215,9 @@ describe("Test Decode Tx", function () {
             onChain: 1,
             newAccount: 1,
             auxFromIdx: 3,
-            inIdx: 2
+            inIdx: 2,
+            maxNumBatch: 0,
+            currentNumBatch: 6
         };
 
         // correct incremental
@@ -251,7 +260,7 @@ describe("Test Decode Tx", function () {
         await circuit.assertOut(w, checkOut);
     });
 
-    it("Should check L2TxData", async () => {
+    it("Should check L1L2TxData", async () => {
 
         const indexBits = (NLEVELS/8) * 8;
         const amountBits = 16;
@@ -285,7 +294,9 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
-            inIdx: 0
+            inIdx: 0,
+            maxNumBatch: 0,
+            currentNumBatch: 0
         };
 
         // L2 tx
@@ -299,7 +310,7 @@ describe("Test Decode Tx", function () {
         }
 
         let checkOut = {
-            L2TxData: resBits,
+            L1L2TxData: resBits,
         };
 
         await circuit.assertOut(w, checkOut);
@@ -309,16 +320,22 @@ describe("Test Decode Tx", function () {
         input.onChain = 1;
         w = await circuit.calculateWitness(input, {logOutput: false});
 
-        const bitsL1 = Array(totalBits).fill(0);
+        tx.effectiveAmount = tx.amount;
+        const tmpL1 = txUtils.encodeL1Tx(tx, NLEVELS);
+        const resL1 = Scalar.fromString(tmpL1, 16);
+        let resL1Bits = Scalar.bits(resL1).reverse();
+        while(resL1Bits.length < totalBits){
+            resL1Bits.unshift(0);
+        }
 
         checkOut = {
-            L2TxData: bitsL1,
+            L1L2TxData: resL1Bits,
         };
 
         await circuit.assertOut(w, checkOut);
     });
 
-    it("Should check L1TxData", async () => {
+    it("Should check L1TxFullData", async () => {
         const fromEthAddrB = 160;
         const fromBjjCompressedB = 256;
         const idxB = MAX_NLEVELS;
@@ -358,7 +375,9 @@ describe("Test Decode Tx", function () {
             onChain: 1,
             newAccount: 0,
             auxFromIdx: 0,
-            inIdx: 0
+            inIdx: 0,
+            maxNumBatch: 5,
+            currentNumBatch: 5
         };
 
         // Add BjjCompressed Bits
@@ -370,7 +389,7 @@ describe("Test Decode Tx", function () {
         // L1 tx
         let w = await circuit.calculateWitness(input, {logOutput: false});
 
-        const tmp = txUtils.encodeL1Tx(tx, NLEVELS);
+        const tmp = txUtils.encodeL1TxFull(tx, NLEVELS);
         const res = Scalar.fromString(tmp, 16);
         let resBits = Scalar.bits(res).reverse();
         while(resBits.length < totalBits){
@@ -378,7 +397,7 @@ describe("Test Decode Tx", function () {
         }
 
         let checkOut = {
-            L1TxData: resBits,
+            L1TxFullData: resBits,
         };
 
         await circuit.assertOut(w, checkOut);
@@ -390,9 +409,52 @@ describe("Test Decode Tx", function () {
         const bitsL2 = Array(totalBits).fill(0);
 
         checkOut = {
-            L1TxData: bitsL2,
+            L1TxFullData: bitsL2,
         };
 
         await circuit.assertOut(w, checkOut);
+    });
+
+    it("Should check maxNumBatch Vs currentNumBatch", async () => {
+        const input = {
+            previousOnChain: 0,
+            txCompressedData: txUtils.buildTxCompressedData({fromIdx: 1}).toString(),
+            toEthAddr: 0,
+            toBjjAy: 0,
+            rqTxCompressedDataV2: 0,
+            rqToEthAddr: 0,
+            rqToBjjAy: 0,
+            fromEthAddr: 0,
+            fromBjjCompressed: Array(256).fill(0),
+            loadAmountF: 0,
+            globalChainID: 0,
+            onChain: 0,
+            newAccount: 0,
+            auxFromIdx: 0,
+            inIdx: 0,
+            maxNumBatch: 42,
+            currentNumBatch: 30
+        };
+
+        // maxNumBatch > currentNumBatch
+        await circuit.calculateWitness(input, {logOutput: false});
+
+        // maxNumBatch = currentNumBatch
+        input.currentNumBatch = 42;
+        await circuit.calculateWitness(input, {logOutput: false});
+
+        // maxNumBatch < currentNumBatch
+        input.currentNumBatch = 43;
+        try {
+            await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+            expect(true).to.be.equal(false);
+        } catch (error) {
+            expect(error.message.includes("Constraint doesn't match"))
+                .equal(true);
+        }
+
+        // (maxNumBatch < currentNumBatch) & maxNumBatch != 0
+        input.maxNumBatch = 0;
+        await circuit.calculateWitness(input, {logOutput: false});
     });
 });

@@ -1,6 +1,6 @@
 const { createCircuit, compileCircuit, inputs,
     compileWitness, computeWitness, computeZkey,
-     generateSolidityVerifier} = require("./helpers/actions");
+    generateSolidityVerifier} = require("./helpers/actions");
 
 // Input parameters
 const command = process.argv[2];
@@ -25,7 +25,7 @@ checkParam(maxFeeTx, "number of fee tx");
 
 // Circuits with nLevel < 16 is not enought to have a firstIdx of 255
 if (nLevels < 16){
-   console.log("WARNING: Circuit should have a minimum of 16 levels to be compatible with constant firstIdx=255. Proceed at your own risk")
+    console.log("WARNING: Circuit should have a minimum of 16 levels to be compatible with constant firstIdx=255. Proceed at your own risk");
 }
 
 // compile circuit
@@ -40,7 +40,7 @@ if (command == "create"){
 } else if (command == "witness"){
     computeWitness(nTx, nLevels, maxL1Tx, maxFeeTx);
 } else if (command == "zkey"){
-    const ptauFile = process.argv[7]
+    const ptauFile = process.argv[7];
     computeZkey(nTx, nLevels, maxL1Tx, maxFeeTx, ptauFile);
 } else if (command == "solidity"){
     generateSolidityVerifier(nTx, nLevels, maxL1Tx, maxFeeTx);

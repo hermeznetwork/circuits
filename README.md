@@ -1,7 +1,7 @@
 # Circuits
 Implements zkSNARKs circuits for [hermez network](https://hermez.io/)
 
-![Main CI](https://github.com/hermeznetwork/circuits/workflows/Main%20CI/badge.svg)
+[![Main CI](https://github.com/hermeznetwork/circuits/workflows/Main%20CI/badge.svg)](https://github.com/hermeznetwork/commonjs/actions?query=workflow%3A%22Main+CI%22)
 
 ## Documentation
 

@@ -131,8 +131,8 @@ function getSingleTxInput(bb, numTx, tx, nTokens){
             finalInput.imStateRoot[numTx],
         newExitRoot: (finalInput.imExitRoot[numTx] === undefined) ? bb.getNewExitRoot() :
             finalInput.imExitRoot[numTx],
+        isAmountNullified: tx.isAmountNullified ? 1 : 0,
     };
-
     return {input, output};
 }
 
@@ -178,11 +178,13 @@ async function printBatchOutputs(bb){
     console.log("BB oldStRoot: ", bb.getOldStateRoot());
     console.log("BB newStateRoot: ", bb.getNewStateRoot());
     console.log("BB newExitRoot: ", bb.getNewExitRoot());
-    console.log("BB L1TxsData: ", bb.getL1TxsData());
-    console.log("BB L2TxsData: ", bb.getL2TxsData());
+    console.log("BB L1FullTxsData: ", bb.getL1TxsFullData());
+    console.log("BB L2TxsData: ", bb.getL1L2TxsData());
     console.log("BB getFeeTxsData: ", bb.getFeeTxsData());
     console.log("BB chainID: ", bb.chainID);
-    console.log("BB hashInputStr: ", bb.getHashInputsStr());
+    console.log("BB currentNumBatch: ", bb.currentNumBatch);
+    console.log("BB globalInputStr: ", bb.getInputsStr());
+    console.log("BB hashGlobalInput: ", bb.getHashInputs());
 }
 
 module.exports = {
