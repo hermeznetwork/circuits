@@ -55,7 +55,7 @@ Example command:
   - `node build-circuit.js witness 256 32 128 64`
 
 ### Compute zkey 
-- computes zkey file given an a constraint (.r1cs) and a power of taw (ptau) file.
+- computes zkey file given an a constraint (.r1cs) and a power of tau (ptau) file.
 
 Example command:
   - `node build-circuit.js zkey 256 32 128 64` uses ptau file stored at GPU Server (tester@135.255.190.114:/contract-circuits/pot23_final.ptau). Requires to be working in GPU server.
