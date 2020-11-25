@@ -25,6 +25,7 @@ include "./lib/decode-float.circom";
  * @input onChain - {Bool} - determines if the transaction is L1 or L2
  * @input newAccount - {Bool} - determines if transaction creates a new account
  * @input auxFromIdx - {Uint48} - auxiliary index to create accounts
+ * @input auxToIdx - {Uint48} - auxiliary index when signed index receiver is set to null
  * @input inIdx  - {Uint48} - old last index assigned
  * @output L1L2TxData[nLevels*2 + 16 + 8] - {Array[Bool]} - L1-L2 data availability
  * @output txCompressedDataV2 - {Uint193} - encode transaction fields together version 2
@@ -64,6 +65,7 @@ template DecodeTx(nLevels) {
     signal input onChain;
     signal input newAccount;
     signal input auxFromIdx;
+    signal input auxToIdx;
 
     // fromEthAddr | fromBjjCompressed | fromIdx | loadAmountF | amountF | tokenID | toIdx
     signal output L1TxFullData[160 + 256 + 48 + 16 + 16 + 32 + 48];
@@ -163,7 +165,7 @@ template DecodeTx(nLevels) {
     toBjjSign <== n2bData.out[240];
 
     // Build txCompressedDataV2
-    //////
+    ////////
     // fromIdx | toIdx | amountF | tokenID | nonce | userFee | toBjjSign
 
     // add fromIdx
@@ -204,13 +206,29 @@ template DecodeTx(nLevels) {
 
     // Build L1L2TxData
     ////////
+    // select finalIdx
+    // if user signs 'toIdx == 0', then idx receiver would be freely chosen
+    // by the coordinator and it is set on 'auxToIdx'.
+    // 'auxToIdx' would be the receiver and it would be added to data availability
+    // ineatd of `toIdx`
+    component toIdxIsZero = IsZero();
+    toIdxIsZero.in <== toIdx;
+
+    component selectToIdx = Mux1();
+    selectToIdx.c[0] <== toIdx;
+    selectToIdx.c[1] <== auxToIdx;
+    selectToIdx.s <== (1-onChain)*toIdxIsZero.out;
+
+    component n2bFinalToIdx = Num2Bits(nLevels);
+    n2bFinalToIdx.in <== selectToIdx.out;
+
     // Add fromIdx
     for (i = 0; i < nLevels; i++) {
         L1L2TxData[nLevels - 1 - i] <== n2bData.out[48 + i];
     }
     // Add toIdx
     for (i = 0; i < nLevels; i++) {
-        L1L2TxData[nLevels*2 - 1 - i] <== n2bData.out[96 + i];
+        L1L2TxData[nLevels*2 - 1 - i] <== n2bFinalToIdx.out[i];
     }
     // Add amountF
     for (i = 0; i < 16; i++) {

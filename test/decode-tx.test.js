@@ -40,7 +40,7 @@ describe("Test Decode Tx", function () {
         const tx = {
             chainID: random(2**16),
             fromIdx: random(2**NLEVELS),
-            toIdx: random(2**NLEVELS),
+            toIdx: random(2**NLEVELS) || 1,
             amount: float16.float2Fix(float16.fix2Float(random(2**50))),
             tokenID: random(2**32),
             nonce: random(2**40),
@@ -63,6 +63,7 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
+            auxToIdx: 0,
             inIdx: 0,
             maxNumBatch: 0,
             currentNumBatch: 0
@@ -130,6 +131,7 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
+            auxToIdx: 0,
             inIdx: 0,
             maxNumBatch: tx.maxNumBatch,
             currentNumBatch: tx.maxNumBatch - 1
@@ -169,6 +171,7 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
+            auxToIdx: 0,
             inIdx: 0,
             maxNumBatch: 3,
             currentNumBatch: 3
@@ -215,6 +218,7 @@ describe("Test Decode Tx", function () {
             onChain: 1,
             newAccount: 1,
             auxFromIdx: 3,
+            auxToIdx: 0,
             inIdx: 2,
             maxNumBatch: 0,
             currentNumBatch: 6
@@ -271,7 +275,7 @@ describe("Test Decode Tx", function () {
         const tx = {
             chainID: 0,
             fromIdx: random(2**NLEVELS),
-            toIdx: random(2**NLEVELS),
+            toIdx: random(2**NLEVELS) || 1,
             amount: float16.float2Fix(float16.fix2Float(random(2**50))),
             tokenID: 0,
             nonce: 0,
@@ -294,6 +298,7 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
+            auxToIdx: 0,
             inIdx: 0,
             maxNumBatch: 0,
             currentNumBatch: 0
@@ -302,14 +307,35 @@ describe("Test Decode Tx", function () {
         // L2 tx
         let w = await circuit.calculateWitness(input, {logOutput: false});
 
-        const tmp = txUtils.encodeL2Tx(tx, NLEVELS);
-        const res = Scalar.fromString(tmp, 16);
+        let tmp = txUtils.encodeL2Tx(tx, NLEVELS);
+        let res = Scalar.fromString(tmp, 16);
         let resBits = Scalar.bits(res).reverse();
         while(resBits.length < totalBits){
             resBits.unshift(0);
         }
 
         let checkOut = {
+            L1L2TxData: resBits,
+        };
+
+        await circuit.assertOut(w, checkOut);
+
+        // L2 tx with toIdx == 0
+        tx.toIdx = 0;
+        tx.auxToIdx = random(2**NLEVELS) || 1;
+        input.txCompressedData = txUtils.buildTxCompressedData(tx).toString();
+        input.auxToIdx = tx.auxToIdx;
+
+        w = await circuit.calculateWitness(input, {logOutput: false});
+
+        tmp = txUtils.encodeL2Tx(tx, NLEVELS);
+        res = Scalar.fromString(tmp, 16);
+        resBits = Scalar.bits(res).reverse();
+        while(resBits.length < totalBits){
+            resBits.unshift(0);
+        }
+
+        checkOut = {
             L1L2TxData: resBits,
         };
 
@@ -375,6 +401,7 @@ describe("Test Decode Tx", function () {
             onChain: 1,
             newAccount: 0,
             auxFromIdx: 0,
+            auxToIdx: 0,
             inIdx: 0,
             maxNumBatch: 5,
             currentNumBatch: 5
@@ -431,6 +458,7 @@ describe("Test Decode Tx", function () {
             onChain: 0,
             newAccount: 0,
             auxFromIdx: 0,
+            auxToIdx: 0,
             inIdx: 0,
             maxNumBatch: 42,
             currentNumBatch: 30

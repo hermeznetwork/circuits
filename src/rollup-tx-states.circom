@@ -105,7 +105,7 @@ template RollupTxStates() {
     // Select finalToIdx
     ////////
     // if user signs 'toIdx == 0', then idx receiver would be freely chosen
-    // by the operator and it is set on 'auxToIdx'
+    // by the coordinator and it is set on 'auxToIdx'
     // note that this might happen in 'transferToEthAddr' and 'transferToBjj' transaction types
 
     signal finalToIdx;
