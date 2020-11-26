@@ -246,6 +246,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         decodeTx[i].onChain <== onChain[i];
         decodeTx[i].newAccount <== newAccount[i];
         decodeTx[i].auxFromIdx <== auxFromIdx[i];
+        decodeTx[i].auxToIdx <== auxToIdx[i];
     }
 
     // C - check integrity decode intermediary signals
