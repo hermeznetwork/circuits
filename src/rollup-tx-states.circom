@@ -253,7 +253,7 @@ template RollupTxStates() {
     // |     createAccountDeposit     |     1      |      1       |    0     |      0       |       0       |        0         |          0          |        0        |
     // | createAccountDepositTransfer |     1      |      1       |    1     |      0       |       0       |        1         |          0          |        1        |
     // |           deposit            |     0      |      1       |    0     |      0       |       1       |        0         |          1          |        0        |
-    // |       depositTransfer        |     0      |      1       |    1     |      1       |       1       |        1         |          0          |        1        |
+    // |       depositTransfer        |     0      |      1       |    1     |      1       |       1       |        1         |          1          |        1        |
     // |        forceTransfer         |     0      |      0       |    1     |      1       |       1       |        1         |          0          |        1        |
     // |          forceExit           |     0      |      0       |    1     |      1       |       1       | 1 if newExit = 0 |          0          |        1        |
 
