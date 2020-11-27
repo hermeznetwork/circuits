@@ -32,16 +32,16 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     var bitsFeeTxsData = maxFeeTx * bitsIndex;
 
     // inputs
-    signal input oldLastIdx;
-    signal input newLastIdx;
+    signal input currentNumBatch;
+    signal input globalChainID;
     signal input oldStateRoot;
-    signal input newStateRoot;
-    signal input newExitRoot;
+    signal input oldLastIdx;
+    signal input feeTxsData[maxFeeTx]; // array of merkle tree indexes
     signal input L1TxsFullData[bitsL1TxsFullData]; // already in bits
     signal input L1L2TxsData[bitsL1L2TxsData]; // already in bits
-    signal input feeTxsData[maxFeeTx]; // array of merkle tree indexes
-    signal input globalChainID;
-    signal input currentNumBatch;
+    signal input newStateRoot;
+    signal input newExitRoot;
+    signal input newLastIdx;
 
     // output
     signal output hashInputsOut;
@@ -114,23 +114,49 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
 
     var offset = 0;
 
-    // add oldLastIdx
-    for (i = 0; i < bitsIndexMax; i++) {
-        inputsHasher.in[bitsIndexMax - 1 - i] <== n2bOldLastIdx.out[i];
+    // add currentNumBatch
+    for (i = 0; i < bitsCurrentNumBatch; i++) {
+        inputsHasher.in[offset + bitsCurrentNumBatch - 1 - i] <== n2bCurrentNumBatch.out[i];
     }
-    offset = offset + bitsIndexMax;
+    offset = offset + bitsCurrentNumBatch;
 
-    // add newLastIdx
-    for (i = 0; i < bitsIndexMax; i++) {
-        inputsHasher.in[offset + bitsIndexMax - 1 - i] <== n2bNewLastIdx.out[i];
+    // add chainID
+    for (i = 0; i < bitsChainID; i++) {
+        inputsHasher.in[offset + bitsChainID - 1 - i] <== n2bChainID.out[i];
     }
-    offset = offset + bitsIndexMax;
+    offset = offset + bitsChainID;
 
     // add oldStateRoot
     for (i = 0; i < bitsRoots; i++) {
         inputsHasher.in[offset + bitsRoots - 1 - i] <== n2bOldStateRoot.out[i];
     }
     offset = offset + bitsRoots;
+
+    // add oldLastIdx
+    for (i = 0; i < bitsIndexMax; i++) {
+        inputsHasher.in[offset + bitsIndexMax - 1 - i] <== n2bOldLastIdx.out[i];
+    }
+    offset = offset + bitsIndexMax;
+
+    // add feeTxData
+    for (i = 0; i < maxFeeTx; i++){
+        for (j = 0; j < bitsIndex; j++){
+            inputsHasher.in[offset + bitsIndex - 1 - j] <== n2bFeeTxsData[i].out[j];
+        }
+        offset = offset + bitsIndex;
+    }
+
+    // add L1TxsFullData
+    for (i = 0; i < bitsL1TxsFullData; i++) {
+        inputsHasher.in[offset + i] <== L1TxsFullData[i];
+    }
+    offset = offset + bitsL1TxsFullData;
+    
+    // add L1L2TxsData
+    for (i = 0; i < bitsL1L2TxsData; i++) {
+        inputsHasher.in[offset + i] <== L1L2TxsData[i];
+    }
+    offset = offset + bitsL1L2TxsData;
 
     // add newStateRoot
     for (i = 0; i < bitsRoots; i++) {
@@ -143,36 +169,10 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
         inputsHasher.in[offset + bitsRoots - 1 - i] <== n2bNewExitRoot.out[i];
     }
     offset = offset + bitsRoots;
-
-    // add L1TxsFullData
-    for (i = 0; i < bitsL1TxsFullData; i++) {
-        inputsHasher.in[offset + i] <== L1TxsFullData[i];
-    }
-    offset = offset + bitsL1TxsFullData;
-
-    // add L1L2TxsData
-    for (i = 0; i < bitsL1L2TxsData; i++) {
-        inputsHasher.in[offset + i] <== L1L2TxsData[i];
-    }
-    offset = offset + bitsL1L2TxsData;
-
-    // add feeTxData
-    for (i = 0; i < maxFeeTx; i++){
-        for (j = 0; j < bitsIndex; j++){
-            inputsHasher.in[offset + bitsIndex - 1 - j] <== n2bFeeTxsData[i].out[j];
-        }
-        offset = offset + bitsIndex;
-    }
-
-    // add chainID
-    for (i = 0; i < bitsChainID; i++) {
-        inputsHasher.in[offset + bitsChainID - 1 - i] <== n2bChainID.out[i];
-    }
-    offset = offset + bitsChainID;
-
-    // add currentNumBatch
-    for (i = 0; i < bitsCurrentNumBatch; i++) {
-        inputsHasher.in[offset + bitsCurrentNumBatch - 1 - i] <== n2bCurrentNumBatch.out[i];
+    
+    // add newLastIdx
+    for (i = 0; i < bitsIndexMax; i++) {
+        inputsHasher.in[offset + bitsIndexMax - 1 - i] <== n2bNewLastIdx.out[i];
     }
 
     // get hash output

@@ -430,11 +430,14 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     ////////
     component hasherInputs = HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx);
 
-    hasherInputs.oldLastIdx <== oldLastIdx;
-    hasherInputs.newLastIdx <== decodeTx[nTx-1].outIdx;
+    hasherInputs.currentNumBatch <== currentNumBatch;
+    hasherInputs.globalChainID <== globalChainID;
     hasherInputs.oldStateRoot <== oldStateRoot;
-    hasherInputs.newStateRoot <== feeTx[maxFeeTx-1].newStateRoot;
-    hasherInputs.newExitRoot <== rollupTx[nTx-1].newExitRoot;
+    hasherInputs.oldLastIdx <== oldLastIdx;
+
+    for (i = 0; i < maxFeeTx; i++){
+        hasherInputs.feeTxsData[i] <== feeIdxs[i];
+    }
 
     var bitsL1TxFullData = (2*48 + 32 + 16 + 16 + 256 + 160);
     for (i = 0; i < maxL1Tx; i++){
@@ -459,12 +462,9 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         }
     }
 
-    for (i = 0; i < maxFeeTx; i++){
-        hasherInputs.feeTxsData[i] <== feeIdxs[i];
-    }
-
-    hasherInputs.globalChainID <== globalChainID;
-    hasherInputs.currentNumBatch <== currentNumBatch;
+    hasherInputs.newStateRoot <== feeTx[maxFeeTx-1].newStateRoot;
+    hasherInputs.newExitRoot <== rollupTx[nTx-1].newExitRoot;
+    hasherInputs.newLastIdx <== decodeTx[nTx-1].outIdx;
 
     // set public output
     hashGlobalInputs <== hasherInputs.hashInputsOut;
