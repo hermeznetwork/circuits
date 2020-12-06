@@ -374,15 +374,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         }
     }
 
-    // E - check integrity transactions intermediary signals
-    ////////
-    for (i = 0; i < nTx-1; i++) {
-        rollupTx[i].newStateRoot  === imStateRoot[i];
-        rollupTx[i].newExitRoot  === imExitRoot[i];
-        for (j = 0; j < maxFeeTx; j++){
-            rollupTx[i].accFeeOut[j]  === imAccFeeOut[i][j];
-        }
-    }
 
     // F - process fee transactions
     //////
@@ -412,19 +403,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         }
     }
 
-    // G - check integrity fee transactions intermediary signals
-    ////////
-    // check fee transaction intermediary signals
-    for (i = 0; i < maxFeeTx-1; i++) {
-        feeTx[i].newStateRoot  === imStateRootFee[i];
-    }
-
-    // check initial fee state root / accumulate fees for fee tx
-    rollupTx[nTx-1].newStateRoot === imInitStateRootFee;
-
-    for (i = 0; i < maxFeeTx; i++){
-        rollupTx[nTx-1].accFeeOut[i] === imFinalAccFee[i];
-    }
 
     // H - compute global hash input
     ////////
@@ -468,4 +446,29 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
 
     // set public output
     hashGlobalInputs <== hasherInputs.hashInputsOut;
+
+    // E - check integrity transactions intermediary signals
+    ////////
+    for (i = 0; i < nTx-1; i++) {
+        rollupTx[i].newStateRoot  === imStateRoot[i];
+        rollupTx[i].newExitRoot  === imExitRoot[i];
+        for (j = 0; j < maxFeeTx; j++){
+            rollupTx[i].accFeeOut[j]  === imAccFeeOut[i][j];
+        }
+    }
+
+    // G - check integrity fee transactions intermediary signals
+    ////////
+    // check fee transaction intermediary signals
+    for (i = 0; i < maxFeeTx-1; i++) {
+        feeTx[i].newStateRoot  === imStateRootFee[i];
+    }
+
+    // check initial fee state root / accumulate fees for fee tx
+    rollupTx[nTx-1].newStateRoot === imInitStateRootFee;
+
+    for (i = 0; i < maxFeeTx; i++){
+        rollupTx[nTx-1].accFeeOut[i] === imFinalAccFee[i];
+    }
+
 }
