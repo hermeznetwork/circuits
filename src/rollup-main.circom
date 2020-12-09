@@ -199,22 +199,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     component rollupTx[nTx];
     component feeTx[maxFeeTx];
 
-    // A - check binary signals
-    ////////
-    for (i = 0; i < nTx-1; i++){
-        imOnChain[i] * (imOnChain[i] - 1) === 0;
-    }
-
-    for (i = 0; i < nTx; i++){
-        onChain[i] * (onChain[i] - 1) === 0;
-        newAccount[i] * (newAccount[i] - 1) === 0;
-        for(j = 0; j < 256; j++){
-            fromBjjCompressed[i][j] * (fromBjjCompressed[i][j] - 1) === 0;
-        }
-        isOld0_1[i] * (isOld0_1[i] - 1) === 0;
-        isOld0_2[i] * (isOld0_2[i] - 1) === 0;
-    }
-
     // B - decode transactions
     ////////
     for (i = 0; i < nTx; i++) {
@@ -247,17 +231,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         decodeTx[i].newAccount <== newAccount[i];
         decodeTx[i].auxFromIdx <== auxFromIdx[i];
         decodeTx[i].auxToIdx <== auxToIdx[i];
-    }
-
-    // C - check integrity decode intermediary signals
-    ////////
-    for (i = 0; i < nTx; i++) {
-        decodeTx[i].txCompressedDataV2 === txCompressedDataV2[i];
-    }
-
-    for (i = 0; i < nTx - 1; i++) {
-        decodeTx[i].onChain === imOnChain[i];
-        decodeTx[i].outIdx === imOutIdx[i];
     }
 
     // D - process rollup transactions
@@ -446,6 +419,33 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
 
     // set public output
     hashGlobalInputs <== hasherInputs.hashInputsOut;
+
+    // A - check binary signals
+    ////////
+    for (i = 0; i < nTx-1; i++){
+        imOnChain[i] * (imOnChain[i] - 1) === 0;
+    }
+
+    for (i = 0; i < nTx; i++){
+        onChain[i] * (onChain[i] - 1) === 0;
+        newAccount[i] * (newAccount[i] - 1) === 0;
+        for(j = 0; j < 256; j++){
+            fromBjjCompressed[i][j] * (fromBjjCompressed[i][j] - 1) === 0;
+        }
+        isOld0_1[i] * (isOld0_1[i] - 1) === 0;
+        isOld0_2[i] * (isOld0_2[i] - 1) === 0;
+    }
+
+    // C - check integrity decode intermediary signals
+    ////////
+    for (i = 0; i < nTx; i++) {
+        decodeTx[i].txCompressedDataV2 === txCompressedDataV2[i];
+    }
+
+    for (i = 0; i < nTx - 1; i++) {
+        decodeTx[i].onChain === imOnChain[i];
+        decodeTx[i].outIdx === imOutIdx[i];
+    }
 
     // E - check integrity transactions intermediary signals
     ////////
