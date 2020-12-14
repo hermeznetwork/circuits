@@ -22,8 +22,8 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@hermeznetwork/commonjs": "0.0.5",
-    "circom": "^0.5.33",
-    "circom_runtime": "^0.1.5",
+    "circom": "^0.5.35",
+    "circom_runtime": "^0.1.9",
     "circomlib": "^0.3.0",
     "ffiasm": "^0.1.1",
     "ffjavascript": "^0.2.33",
