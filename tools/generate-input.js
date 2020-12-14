@@ -47,7 +47,7 @@ const maxL1Tx  = paramMaxL1Tx  == undefined ? 8  : paramMaxL1Tx;
 const maxFeeTx = paramMaxFeeTx == undefined ? 64 : paramMaxFeeTx;
 
 const minBalance = Scalar.e(0);
-const maxBalance = Scalar.sub(Scalar.shl(1, 128), 1);
+const maxBalance = Scalar.sub(Scalar.shl(1, 96), 1);
 const numBatches = Math.ceil(nAccounts / maxL1Tx);
 let rollupDB;
 let accounts = [];
@@ -100,7 +100,7 @@ async function generateInput(){
 
     // add fee transaction
     bb.addToken(1);
-    bb.addFeeIdx(utils.randomInterval(256, nAccounts));
+    bb.addFeeIdx(utils.randomInterval(256, 256+nAccounts));
 
     console.log("   computing inputs...");
     await bb.build();
