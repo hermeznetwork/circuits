@@ -65,8 +65,8 @@ include "./lib/decode-float.circom"
  * @input ethAddr2 - {Uint160} - ethAddr of the receiver leaf
  * @input siblings2[nLevels + 1] - {Array(Field)} - siblings merkle proof of the receiver leaf
  * @input isOld0_2 - {Bool} - flag to require old key - value
- * @input oldKey2 - {Uint48} - old key of the sender leaf
- * @input oldValue2 - {Field} - old value of the sender leaf
+ * @input oldKey2 - {Uint48} - old key of the receiver leaf
+ * @input oldValue2 - {Field} - old value of the receiver leaf
  * @input oldStateRoot - {Field} - initial state root
  * @input oldExitRoot - {Field} - initial exit root
  * @output isAmountNullified - {Bool} - determines if the amount is nullified
