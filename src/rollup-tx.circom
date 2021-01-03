@@ -579,7 +579,7 @@ template RollupTx(nLevels, maxFeeTx) {
     s4.out ==> newStateRoot;
 
     // new exit root
-    // if tx is an 'exit', select output root of processor 2 (sender)
+    // if tx is an 'exit', select output root of processor 2 (receiver)
     // otherwise, select 'oldExitRoot' since exit root will not be updated
     component s5 = Mux1();
     s5.c[0] <== oldExitRoot;
