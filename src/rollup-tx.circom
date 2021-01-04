@@ -261,14 +261,14 @@ template RollupTx(nLevels, maxFeeTx) {
     toBjjSignChecker.enabled <== states.checkToBjj;
 
     // sender tokenID check on L2
-    // tokenID signed by the user must match tokenID of the receiver account
+    // tokenID signed by the user must match tokenID of the sender account
     component checkTokenID1 = ForceEqualIfEnabled();
     checkTokenID1.in[0] <== tokenID;
     checkTokenID1.in[1] <== tokenID1;
     checkTokenID1.enabled <== (1 - onChain);
 
     // receiver tokenID check on L2
-    // tokenID signed by the user must match tokenID of the sender account
+    // tokenID signed by the user must match tokenID of the receiver account
     component checkTokenID2 = ForceEqualIfEnabled();
     checkTokenID2.in[0] <== tokenID;
     checkTokenID2.in[1] <== tokenID2;
