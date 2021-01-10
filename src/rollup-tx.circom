@@ -179,15 +179,9 @@ template RollupTx(nLevels, maxFeeTx) {
     // decode loadAmountF
     signal loadAmount;
 
-    component n2bloadAmountF = Num2Bits(16);
-    n2bloadAmountF.in <== loadAmountF;
-
-    component dfLoadAmount = DecodeFloatBin();
-    for (i = 0; i < 16; i++) {
-        dfLoadAmount.in[i] <== n2bloadAmountF.out[i];
-    }
-
-    dfLoadAmount.out ==> loadAmount;
+    component decodeLoadAmountF = DecodeFloat();
+    decodeLoadAmountF.in <== loadAmountF;
+    decodeLoadAmountF.out ==> loadAmount;
 
     // compute states
     component states = RollupTxStates();
