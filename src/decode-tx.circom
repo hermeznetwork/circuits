@@ -208,7 +208,7 @@ template DecodeTx(nLevels) {
     }
 
     // add toSignBjj
-    b2nTxCompressedDataV2.in[192] <== n2bData.out[224];
+    b2nTxCompressedDataV2.in[48 + 48 + 40 + 32 + 40 + 8] <== n2bData.out[224];
 
     b2nTxCompressedDataV2.out ==> txCompressedDataV2;
 
