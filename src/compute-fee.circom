@@ -10,9 +10,9 @@ include "./lib/mux256.circom";
  * @output feeOut - {Uint128} - amount*feeFactor
  */
 template ComputeFee() {
-    signal input feeSel;  
-    signal input amount;        
-    signal input applyFee;  
+    signal input feeSel;
+    signal input amount;
+    signal input applyFee;
 
     signal output feeOut;
 
@@ -36,12 +36,12 @@ template ComputeFee() {
     // feeFactor is the output of the mux256
     // feeFactor could be shifted or not
     // overflow could not be achieved since:
-    // - maxTransferAmount is '10235000000000000000000000000000000' since amountF max value is 0xFFFF
-    // - maxAmountTransfer bits length is 113
+    // - maxTransferAmount is '343597383670000000000000000000000000000000' since amountF max value is 0xFFFFFFFFFF
+    // - maxAmountTransfer bits length is 138
     // - maxShiftedFeeValue = feeShiftTable(191) with bit length 60
     // - maxNonShiftedFeeValue = feeShiftTable(255) with bit length 63
-    // - bitLength(maxTransferAmount) + bitLength(maxShiftedFeeValue) = 173 < 253
-    // - bitLength(maxTransferAmount) + bitLength(maxNonShiftedFeeValue) = 176 < 253
+    // - bitLength(maxTransferAmount) + bitLength(maxShiftedFeeValue) = 198 < 253
+    // - bitLength(maxTransferAmount) + bitLength(maxNonShiftedFeeValue) = 201 < 253
     signal feeOutNotShifted;
     feeOutNotShifted <== mux256.out*amount;
 
@@ -59,10 +59,10 @@ template ComputeFee() {
     var lcIn = 0;                   // linear combination value stored on 'bitsFeeOut'
     var lcNotShifted = 0;           // feeOut if feeSel >= 192. Took from 'bitsFeeOut[0]...bitsFeeOut[127]'
     var lcShifted = 0;              // feeOut if feeSel < 192. Took from 'bitsFeeOut[bitsShiftPrecision]...bitsFeeOut[bitsShiftPrecision + 127]'
-    var lcOverflowNotShifted = 0;   // check overflow if feeSel >= 192. Took from 'bitsFeeOut[128]...bitsFeeOut[252]'   
+    var lcOverflowNotShifted = 0;   // check overflow if feeSel >= 192. Took from 'bitsFeeOut[128]...bitsFeeOut[252]'
     var lcOverflowShifted = 0;      // check overflow if feeSel < 192. Took from 'bitsFeeOut[bitsShiftPrecision + 128]...bitsFeeOut[252]'
 
-    // computes: 
+    // computes:
     //  - amount * feeFactor
     //  - amount * (feeFactor << bitsShiftPrecision)
     for (var i = 0; i < 253; i++) {
@@ -83,7 +83,7 @@ template ComputeFee() {
         }
     }
 
-    // check binary representeation of 'feeOutNotShifted' matches its value 
+    // check binary representeation of 'feeOutNotShifted' matches its value
     lcIn === feeOutNotShifted;
 
     // checks overflow of 128 bits
@@ -99,7 +99,7 @@ template ComputeFee() {
 
 /**
  * Fee table hardcoded values
- * Table: 
+ * Table:
  * - (fee2Apply) * 2**bitsShift for i < 192
  * - (fee2Apply) for i < 192
  * Chosen bitShift = 60, which is the minimum value to have precision for each fee applied (if fee selected < 192)

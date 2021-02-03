@@ -273,14 +273,13 @@ template DecodeTx(nLevels) {
         b2nElement1.in[200 + i] <== n2bMaxNumBatch.out[i];
     }
 
-    component hashSig = Poseidon(7);
+    component hashSig = Poseidon(6);
     hashSig.inputs[0] <== txCompressedData;
     hashSig.inputs[1] <== b2nElement1.out;
     hashSig.inputs[2] <== toBjjAy;
     hashSig.inputs[3] <== rqTxCompressedDataV2;
     hashSig.inputs[4] <== rqToEthAddr;
     hashSig.inputs[5] <== rqToBjjAy;
-    hashSig.inputs[6] <== 0;
 
     hashSig.out ==> sigL2Hash;
 
