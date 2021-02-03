@@ -36,12 +36,12 @@ template ComputeFee() {
     // feeFactor is the output of the mux256
     // feeFactor could be shifted or not
     // overflow could not be achieved since:
-    // - maxTransferAmount is '10235000000000000000000000000000000' since amountF max value is 0xFFFF
-    // - maxAmountTransfer bits length is 113
+    // - maxTransferAmount is '343597383670000000000000000000000000000000' since amountF max value is 0xFFFFFFFFFF
+    // - maxAmountTransfer bits length is 138
     // - maxShiftedFeeValue = feeShiftTable(191) with bit length 60
     // - maxNonShiftedFeeValue = feeShiftTable(255) with bit length 63
-    // - bitLength(maxTransferAmount) + bitLength(maxShiftedFeeValue) = 173 < 253
-    // - bitLength(maxTransferAmount) + bitLength(maxNonShiftedFeeValue) = 176 < 253
+    // - bitLength(maxTransferAmount) + bitLength(maxShiftedFeeValue) = 198 < 253
+    // - bitLength(maxTransferAmount) + bitLength(maxNonShiftedFeeValue) = 201 < 253
     signal feeOutNotShifted;
     feeOutNotShifted <== mux256.out*amount;
 
@@ -87,10 +87,6 @@ template ComputeFee() {
     lcIn === feeOutNotShifted;
 
     // checks overflow of 128 bits
-    // it is performed a sanity check for shifted 'feeFactor'
-    // - max shifted 'feeFactor' is 'feeShiftTable(191)'
-    // - (feeShiftTable(191) >> bitsShiftPrecision) = 2**(-0.05) < 1
-    // - max computed fee would not overflow since 'maxTransferAmount' < 2**128
     applyShift * lcOverflowShifted === 0;
     (1 - applyShift) * lcOverflowNotShifted === 0;
 
