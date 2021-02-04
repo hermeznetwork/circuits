@@ -87,10 +87,6 @@ template ComputeFee() {
     lcIn === feeOutNotShifted;
 
     // checks overflow of 128 bits
-    // it is performed a sanity check for shifted 'feeFactor'
-    // - max shifted 'feeFactor' is 'feeShiftTable(191)'
-    // - (feeShiftTable(191) >> bitsShiftPrecision) = 2**(-0.05) < 1
-    // - max computed fee would not overflow since 'maxTransferAmount' < 2**128
     applyShift * lcOverflowShifted === 0;
     (1 - applyShift) * lcOverflowNotShifted === 0;
 
