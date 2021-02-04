@@ -179,11 +179,11 @@ template RollupTx(nLevels, maxFeeTx) {
     // decode loadAmountF
     signal loadAmount;
 
-    component n2bloadAmountF = Num2Bits(16);
+    component n2bloadAmountF = Num2Bits(40);
     n2bloadAmountF.in <== loadAmountF;
 
     component dfLoadAmount = DecodeFloatBin();
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < 40; i++) {
         dfLoadAmount.in[i] <== n2bloadAmountF.out[i];
     }
 

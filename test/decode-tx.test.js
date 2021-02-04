@@ -4,7 +4,7 @@ const path = require("path");
 const tester = require("circom").tester;
 const Scalar = require("ffjavascript").Scalar;
 
-const { HermezAccount, txUtils, float16 } = require("@hermeznetwork/commonjs");
+const { HermezAccount, txUtils, float40 } = require("@hermeznetwork/commonjs");
 const random = require("./helpers/helpers").random;
 
 
@@ -41,7 +41,7 @@ describe("Test Decode Tx", function () {
             chainID: random(2**16),
             fromIdx: random(2**NLEVELS),
             toIdx: random(2**NLEVELS) || 1,
-            amount: float16.float2Fix(float16.fix2Float(random(2**50))),
+            amount: float40.round(random(2**50)),
             tokenID: random(2**32),
             nonce: random(2**40),
             userFee: random(2**8),
@@ -51,6 +51,7 @@ describe("Test Decode Tx", function () {
         const input = {
             previousOnChain: 1,
             txCompressedData: txUtils.buildTxCompressedData(tx).toString(),
+            amountF: float40.fix2Float(tx.amount),
             toEthAddr: 0,
             toBjjAy: 0,
             rqTxCompressedDataV2: 0,
@@ -100,7 +101,7 @@ describe("Test Decode Tx", function () {
             chainID: random(2**16),
             fromIdx: random(2**NLEVELS),
             toIdx: random(2**NLEVELS),
-            amount: float16.float2Fix(float16.fix2Float(random(2**50))),
+            amount: float40.round(random(2**50)),
             tokenID: random(2**32),
             nonce: random(2**40),
             userFee: random(2**8),
@@ -119,6 +120,7 @@ describe("Test Decode Tx", function () {
         const input = {
             previousOnChain: 1,
             txCompressedData: txUtils.buildTxCompressedData(tx).toString(),
+            amountF: float40.fix2Float(tx.amount),
             toEthAddr: Scalar.fromString(tx.toEthAddr, 16),
             toBjjAy: Scalar.fromString(tx.toBjjAy, 16),
             rqTxCompressedDataV2: tx.rqTxCompressedDataV2,
@@ -159,6 +161,7 @@ describe("Test Decode Tx", function () {
         const input = {
             previousOnChain: 0,
             txCompressedData: txUtils.buildTxCompressedData({fromIdx: 1}).toString(),
+            amountF: 0,
             toEthAddr: 0,
             toBjjAy: 0,
             rqTxCompressedDataV2: 0,
@@ -206,6 +209,7 @@ describe("Test Decode Tx", function () {
         const input = {
             previousOnChain: 1,
             txCompressedData: txUtils.buildTxCompressedData({}).toString(),
+            amountF: 0,
             toEthAddr: 0,
             toBjjAy: 0,
             rqTxCompressedDataV2: 0,
@@ -267,7 +271,7 @@ describe("Test Decode Tx", function () {
     it("Should check L1L2TxData", async () => {
 
         const indexBits = (NLEVELS/8) * 8;
-        const amountBits = 16;
+        const amountBits = 40;
         const feeBits = 8;
 
         const totalBits = (indexBits * 2) + amountBits + feeBits;
@@ -276,7 +280,7 @@ describe("Test Decode Tx", function () {
             chainID: 0,
             fromIdx: random(2**NLEVELS),
             toIdx: random(2**NLEVELS) || 1,
-            amount: float16.float2Fix(float16.fix2Float(random(2**50))),
+            amount: float40.round(random(2**50)),
             tokenID: 0,
             nonce: 0,
             userFee: random(2**8),
@@ -286,6 +290,7 @@ describe("Test Decode Tx", function () {
         const input = {
             previousOnChain: 0,
             txCompressedData: txUtils.buildTxCompressedData(tx).toString(),
+            amountF: float40.fix2Float(tx.amount),
             toEthAddr: 0,
             toBjjAy: 0,
             rqTxCompressedDataV2: 0,
@@ -365,16 +370,16 @@ describe("Test Decode Tx", function () {
         const fromEthAddrB = 160;
         const fromBjjCompressedB = 256;
         const idxB = MAX_NLEVELS;
-        const f16B = 16;
+        const f40B = 40;
         const tokenIDB = 32;
 
-        const totalBits = fromEthAddrB + fromBjjCompressedB + 2*idxB + tokenIDB + 2*f16B;
+        const totalBits = fromEthAddrB + fromBjjCompressedB + 2*idxB + tokenIDB + 2*f40B;
 
         const tx = {
             chainID: 0,
             fromIdx: 1,
             toIdx: 2,
-            amount: float16.float2Fix(float16.fix2Float(3)),
+            amount: float40.round(3),
             tokenID: 5,
             nonce: 0,
             userFee: 0,
@@ -384,11 +389,12 @@ describe("Test Decode Tx", function () {
             fromEthAddr: fromAcc.ethAddr
         };
 
-        tx.amountF = float16.fix2Float(tx.amount);
+        tx.amountF = float40.fix2Float(tx.amount);
 
         const input = {
             previousOnChain: 1,
             txCompressedData: txUtils.buildTxCompressedData(tx).toString(),
+            amountF: float40.fix2Float(tx.amount),
             toEthAddr: 0,
             toBjjAy: 0,
             rqTxCompressedDataV2: 0,
@@ -446,6 +452,7 @@ describe("Test Decode Tx", function () {
         const input = {
             previousOnChain: 0,
             txCompressedData: txUtils.buildTxCompressedData({fromIdx: 1}).toString(),
+            amountF: 0,
             toEthAddr: 0,
             toBjjAy: 0,
             rqTxCompressedDataV2: 0,

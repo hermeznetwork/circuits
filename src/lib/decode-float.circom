@@ -24,7 +24,7 @@ template DecodeFloatBin() {
 
     // Mapping
     for (i = 0; i < 35; i++) m[i] <== in[i];
-    for (i = 0; i < 5; i++) e[i] <== in[i+10];
+    for (i = 0; i < 5; i++) e[i] <== in[i+35];
 
     pe[0] <== (9 * e[0]) + 1;
     for (i = 1; i < 5; i++) {

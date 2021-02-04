@@ -7,7 +7,7 @@ const Scalar = require("ffjavascript").Scalar;
 const RollupDB = require("@hermeznetwork/commonjs").RollupDB;
 const Account = require("@hermeznetwork/commonjs").HermezAccount;
 const Constants = require("@hermeznetwork/commonjs").Constants;
-const float16 = require("@hermeznetwork/commonjs").float16;
+const float40 = require("@hermeznetwork/commonjs").float40;
 
 const { depositTx, assertBatch } = require("./helpers/helpers");
 
@@ -128,7 +128,7 @@ describe("Test rollup-main L1 transactions", function () {
         // standard transaction
         const tx = {
             fromIdx: 0,
-            loadAmountF: float16.fix2Float(100),
+            loadAmountF: float40.fix2Float(100),
             amountF: 0,
             tokenID: 1,
             fromBjjCompressed: account1.bjjCompressed,

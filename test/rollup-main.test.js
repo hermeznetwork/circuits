@@ -8,7 +8,7 @@ const RollupDB = require("@hermeznetwork/commonjs").RollupDB;
 const Account = require("@hermeznetwork/commonjs").HermezAccount;
 const Constants = require("@hermeznetwork/commonjs").Constants;
 const txUtils = require("@hermeznetwork/commonjs").txUtils;
-const float16 = require("@hermeznetwork/commonjs").float16;
+const float40 = require("@hermeznetwork/commonjs").float40;
 
 const { depositTx, assertBatch, assertAccountsBalances } = require("./helpers/helpers");
 
@@ -420,7 +420,7 @@ describe("Test rollup-main", function () {
         // simulate L1 coordinator create Bjj account
         bb.addTx({
             fromIdx: 0,
-            loadAmountF: float16.fix2Float(1000),
+            loadAmountF: float40.fix2Float(1000),
             tokenID: 1,
             fromBjjCompressed: account2.bjjCompressed,
             fromEthAddr: Constants.nullEthAddr,

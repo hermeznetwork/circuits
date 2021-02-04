@@ -6,7 +6,7 @@ const SMTMemDB = require("circomlib").SMTMemDB;
 
 const RollupDB = require("@hermeznetwork/commonjs").RollupDB;
 const Account = require("@hermeznetwork/commonjs").HermezAccount;
-const float16 = require("@hermeznetwork/commonjs").float16;
+const float40 = require("@hermeznetwork/commonjs").float40;
 
 describe("Test hash-inputs", function () {
     this.timeout(0);
@@ -90,7 +90,7 @@ describe("Test hash-inputs", function () {
 
         bb.addTx({
             fromIdx: 0,
-            loadAmountF: float16.fix2Float(1000),
+            loadAmountF: float40.fix2Float(1000),
             tokenID: 1,
             fromBjjCompressed: account1.bjjCompressed,
             fromEthAddr: account1.ethAddr,
