@@ -13,7 +13,7 @@ function randomInterval(min, max) {
 async function depositTx(bb, account, loadAmount) {
     bb.addTx({
         fromIdx: 0,
-        loadAmountF: float40.fix2Float(loadAmount),
+        loadAmountF: float40.floorFix2Float(loadAmount),
         tokenID: 1,
         fromBjjCompressed: account.bjjCompressed,
         fromEthAddr: account.ethAddr,
@@ -55,7 +55,7 @@ async function transferTx(bb, accountFrom, accountTo, rollupDb) {
         fromBjjCompressed: 0,
         fromEthAddr: 0,
         toIdx: toInfo.idx,
-        amount: Scalar.div(Scalar.mul(baseAmount, 20), 100),
+        amount: float40.round(Scalar.div(Scalar.mul(baseAmount, 20), 100)),
         userFee: 176, // 1 %
         onChain: 0,
         nonce: baseNonce,
