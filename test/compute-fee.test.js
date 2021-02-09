@@ -6,7 +6,7 @@ const Scalar = require("ffjavascript").Scalar;
 
 const { random } = require("./helpers/helpers");
 const { computeFee, tableAdjustedFee } = require("@hermeznetwork/commonjs").feeTable;
-const float16 = require("@hermeznetwork/commonjs").float16;
+const float40 = require("@hermeznetwork/commonjs").float40;
 
 describe("Test compute-fee", function () {
     this.timeout(0);
@@ -91,7 +91,7 @@ describe("Test compute-fee", function () {
     });
 
     it("Should test error compute fee overflow 128 bits", async () => {
-        const amountMaxTransfer = float16.float2Fix(0xFFFF);
+        const amountMaxTransfer = float40.float2Fix(0xF8000002FF);
         // This selected fee is the minimal fee to get an applied fee over 128 bits
         const feeSelected = 208;
 

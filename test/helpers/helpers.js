@@ -1,14 +1,14 @@
 const { expect } = require("chai");
 const Scalar = require("ffjavascript").Scalar;
 
-const { float16 } = require("@hermeznetwork/commonjs");
+const { float40 } = require("@hermeznetwork/commonjs");
 const feeUtils = require("@hermeznetwork/commonjs").feeTable;
 const txUtils = require("@hermeznetwork/commonjs").txUtils;
 
 async function depositTx(bb, account, tokenID, loadAmount) {
     bb.addTx({
         fromIdx: 0,
-        loadAmountF: float16.fix2Float(loadAmount),
+        loadAmountF: float40.fix2Float(loadAmount),
         tokenID: tokenID,
         fromBjjCompressed: account.bjjCompressed,
         fromEthAddr: account.ethAddr,
@@ -70,7 +70,7 @@ function getSingleTxInput(bb, numTx, tx, nTokens){
         toBjjSign: decodeTxCompressedData.toBjjSign ? 1 : 0,
         toEthAddr: finalInput.toEthAddr[numTx],
 
-        amount: decodeTxCompressedData.amount,
+        amount: float40.float2Fix(finalInput.amountF[numTx]),
         tokenID: decodeTxCompressedData.tokenID,
         nonce: decodeTxCompressedData.nonce,
         userFee: decodeTxCompressedData.userFee,

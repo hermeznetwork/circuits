@@ -29,6 +29,7 @@ include "./fee-tx.circom";
  * @input imInitStateRootFee - {Field} - intermediary signals: final state root of all rollup transactions
  * @input imFinalAccFee[maxFeeTx] - {Array(Field)} - intermediary signals: final fees accumulated of all rollup transactions
  * @input txCompressedData[nTx] - {Array(Uint241)} - encode transaction fields together
+ * @input amountF - {Array[Uint40]} - amount to transfer in float40 format
  * @input txCompressedDataV2[nTx] - {Array(Uint193)} - encode transaction fields together version 2
  * @input fromIdx[nTx] - {Array(Uint48)} - index sender
  * @input auxFromIdx[nTx] - {Array(Uint48)} - auxiliary index to create accounts
@@ -45,7 +46,7 @@ include "./fee-tx.circom";
  * @input s[nTx] - {Array(Field)} - eddsa signature field
  * @input r8x[nTx] - {Array(Field)} - eddsa signature field
  * @input r8y[nTx] - {Array(Field)} - eddsa signature field
- * @input loadAmountF[nTx] - {Array(Uint16)} - amount to deposit from L1 to L2 encoded as float16
+ * @input loadAmountF[nTx] - {Array(Uint40)} - amount to deposit from L1 to L2 encoded as float40
  * @input fromEthAddr[nTx] - {Array(Uint160)} - ethereum address sender
  * @input fromBjjCompressed[nTx][256] - {Array[Array(Bool)]} - babyjubjub compressed sender
  * @input tokenID1[nTx] - {Array(Uint32)} - tokenID of the sender leaf
@@ -125,6 +126,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
 
     // transaction L1-L2
     signal private input txCompressedData[nTx];
+    signal private input amountF[nTx];
     signal private input txCompressedDataV2[nTx];
 
     signal private input fromIdx[nTx];
@@ -228,6 +230,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
             decodeTx[i].inIdx <== imOutIdx[i-1];
         }
         decodeTx[i].txCompressedData <== txCompressedData[i];
+        decodeTx[i].amountF <== amountF[i];
         decodeTx[i].toEthAddr <== toEthAddr[i];
         decodeTx[i].toBjjAy <== toBjjAy[i];
         decodeTx[i].rqTxCompressedDataV2 <== rqTxCompressedDataV2[i];
@@ -436,25 +439,25 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     hasherInputs.newStateRoot <== feeTx[maxFeeTx-1].newStateRoot;
     hasherInputs.newExitRoot <== rollupTx[nTx-1].newExitRoot;
 
-    var bitsL1TxFullData = (2*48 + 32 + 16 + 16 + 256 + 160);
+    var bitsL1TxFullData = (2*48 + 32 + 40 + 40 + 256 + 160);
     for (i = 0; i < maxL1Tx; i++){
         for (j = 0; j < bitsL1TxFullData; j++ ){
             hasherInputs.L1TxsFullData[i*bitsL1TxFullData + j] <== decodeTx[i].L1TxFullData[j];
         }
     }
 
-    var bitsL1L2TxData = (2*nLevels + 16 + 8);
+    var bitsL1L2TxData = (2*nLevels + 40 + 8);
     for (i = 0; i < nTx; i++){
         // add fromIdx and toIdx
         for (j = 0; j < 2*nLevels; j++ ){
             hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j];
         }
         // add amountF
-        for (j = 2*nLevels; j < (2*nLevels + 16); j++ ){
+        for (j = 2*nLevels; j < (2*nLevels + 40); j++ ){
             hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j] * (1 - rollupTx[i].isAmountNullified);
         }
         // add fee
-        for (j = (2*nLevels + 16); j < (2*nLevels + 16 + 8); j++ ){
+        for (j = (2*nLevels + 40); j < (2*nLevels + 40 + 8); j++ ){
             hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j];
         }
     }

@@ -27,8 +27,8 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     var bitsRoots = 256;
     var bitsChainID = 16;
     var bitsCurrentNumBatch = 32;
-    var bitsL1TxsFullData = maxL1Tx * (2*bitsIndexMax + 32 + 16 + 16 + 256 + 160);
-    var bitsL1L2TxsData = nTx * (2*nLevels + 16 + 8);
+    var bitsL1TxsFullData = maxL1Tx * (2*bitsIndexMax + 32 + 40 + 40 + 256 + 160);
+    var bitsL1L2TxsData = nTx * (2*nLevels + 40 + 8);
     var bitsFeeTxsData = maxFeeTx * bitsIndex;
 
     // inputs
