@@ -47,7 +47,7 @@ template BalanceUpdater() {
 
     // compute fee2Charge
     ////////
-    component computeFee = ComputeFee(); 
+    component computeFee = ComputeFee();
     computeFee.feeSel <== feeSelector;
     computeFee.amount <== amount;
     computeFee.applyFee <== (1-onChain)*(1-nop); // fee applies only on L2 tx and if it is not a NOP tx

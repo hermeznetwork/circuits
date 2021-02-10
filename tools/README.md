@@ -22,7 +22,7 @@ General command line:
   - folder: `rollup-nTx-nLevels-maxL1Tx-maxFeeTx`
   - circuit: `circuit-nTx-nLevels-maxL1Tx-maxFeeTx`
 
-Example command: 
+Example command:
   - `node build-circuit.js create 256 32 128 64`
 
 ### Compile circuit
@@ -31,9 +31,9 @@ Example command:
   - `circuit-nTx-nLevels-maxL1Tx-maxFeeTx.cpp`: calculate witness cpp
 
 - Parameter added to choose components parallelization `RollupTx|DecodeTx|FeeTx`
-  - Default value: not parellelize 
+  - Default value: not parellelize
 
-Example command: 
+Example command:
   - `node build-circuit.js compile 256 32 128 64 1`
 
 ### Inputs
@@ -54,8 +54,8 @@ Example command:
 Example command:
   - `node build-circuit.js witness 256 32 128 64`
 
-### Compute zkey 
-- computes zkey file given an a constraint (.r1cs) and a power of taw (ptau) file.
+### Compute zkey
+- computes zkey file given an a constraint (.r1cs) and a power of tau (ptau) file.
 
 Example command:
   - `node build-circuit.js zkey 256 32 128 64` uses ptau file stored at GPU Server (tester@135.255.190.114:/contract-circuits/pot23_final.ptau). Requires to be working in GPU server.

@@ -46,7 +46,7 @@ include "./lib/decode-float.circom"
  * @input r8y - {Field} - eddsa signature field
  * @input fromEthAddr - {Uint160} - ethereum address sender
  * @input fromBjjCompressed[256]- {Array(Bool)} - babyjubjub compressed sender
- * @input loadAmountF - {Uint16} - amount to deposit from L1 to L2 encoded as float16
+ * @input loadAmountF - {Uint40} - amount to deposit from L1 to L2 encoded as float40
  * @input tokenID1 - {Uint32} - tokenID of the sender leaf
  * @input nonce1 - {Uint40} - nonce of the sender leaf
  * @input sign1 - {Bool} - sign of the sender leaf
@@ -65,8 +65,8 @@ include "./lib/decode-float.circom"
  * @input ethAddr2 - {Uint160} - ethAddr of the receiver leaf
  * @input siblings2[nLevels + 1] - {Array(Field)} - siblings merkle proof of the receiver leaf
  * @input isOld0_2 - {Bool} - flag to require old key - value
- * @input oldKey2 - {Uint48} - old key of the sender leaf
- * @input oldValue2 - {Field} - old value of the sender leaf
+ * @input oldKey2 - {Uint48} - old key of the receiver leaf
+ * @input oldValue2 - {Field} - old value of the receiver leaf
  * @input oldStateRoot - {Field} - initial state root
  * @input oldExitRoot - {Field} - initial exit root
  * @output isAmountNullified - {Bool} - determines if the amount is nullified
@@ -261,14 +261,14 @@ template RollupTx(nLevels, maxFeeTx) {
     toBjjSignChecker.enabled <== states.checkToBjj;
 
     // sender tokenID check on L2
-    // tokenID signed by the user must match tokenID of the receiver account
+    // tokenID signed by the user must match tokenID of the sender account
     component checkTokenID1 = ForceEqualIfEnabled();
     checkTokenID1.in[0] <== tokenID;
     checkTokenID1.in[1] <== tokenID1;
     checkTokenID1.enabled <== (1 - onChain);
 
     // receiver tokenID check on L2
-    // tokenID signed by the user must match tokenID of the sender account
+    // tokenID signed by the user must match tokenID of the receiver account
     component checkTokenID2 = ForceEqualIfEnabled();
     checkTokenID2.in[0] <== tokenID;
     checkTokenID2.in[1] <== tokenID2;
@@ -579,7 +579,7 @@ template RollupTx(nLevels, maxFeeTx) {
     s4.out ==> newStateRoot;
 
     // new exit root
-    // if tx is an 'exit', select output root of processor 2 (sender)
+    // if tx is an 'exit', select output root of processor 2 (receiver)
     // otherwise, select 'oldExitRoot' since exit root will not be updated
     component s5 = Mux1();
     s5.c[0] <== oldExitRoot;
