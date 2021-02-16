@@ -41,7 +41,7 @@ template Mux256(){
     // set second mux level (mux[16])
     // selectors
     for (i = 0; i < 4; i++){
-        mux[16].s[i] <== s[i + 4]; 
+        mux[16].s[i] <== s[i + 4];
     }
     // inputs
     for (i = 0; i < 16; i++){

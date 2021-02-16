@@ -12,7 +12,7 @@ include "./lib/decode-float.circom";
  * @input previousOnChain - {Bool} - determines if previous transaction is L1
  * @input txCompressedData - {Uint241} - encode transaction fields
  * @input maxNumBatch - {Uint32} - maximum allowed batch number when the transaction can be processed
- * @input amountF - {Uint40} - amount
+ * @input amountF - {Uint40} - amount to transfer from L2 to L2 encoded as float40
  * @input toEthAddr - {Uint160} - ethereum address receiver
  * @input toBjjAy - {Field} - babyjubjub Y coordinate receiver
  * @input rqTxCompressedDataV2 - {Uint193} -requested encode transaction fields version2
@@ -163,7 +163,6 @@ template DecodeTx(nLevels) {
 
     // Parse amount
     ////////
-
     component n2bAmount = Num2Bits(40);
     n2bAmount.in <== amountF;
     component dfAmount = DecodeFloatBin();

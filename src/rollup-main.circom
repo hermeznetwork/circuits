@@ -29,7 +29,7 @@ include "./fee-tx.circom";
  * @input imInitStateRootFee - {Field} - intermediary signals: final state root of all rollup transactions
  * @input imFinalAccFee[maxFeeTx] - {Array(Field)} - intermediary signals: final fees accumulated of all rollup transactions
  * @input txCompressedData[nTx] - {Array(Uint241)} - encode transaction fields together
- * @input amountF - {Array[Uint40]} - amount to transfer in float40 format
+ * @input amountF[nTx] - {Array(Uint40)} - amount to transfer from L2 to L2 encoded as float40
  * @input txCompressedDataV2[nTx] - {Array(Uint193)} - encode transaction fields together version 2
  * @input fromIdx[nTx] - {Array(Uint48)} - index sender
  * @input auxFromIdx[nTx] - {Array(Uint48)} - auxiliary index to create accounts
@@ -37,7 +37,7 @@ include "./fee-tx.circom";
  * @input auxToIdx[nTx] - {Array(Uint48)} - auxiliary index when signed index receiver is set to null
  * @input toBjjAy[nTx] - {Array(Field)} - bayjubjub y coordinate receiver
  * @input toEthAddr[nTx] - {Array(Uint160)} - ethereum address receiver
- * @input maxNumBatch - {Array[Uint32]} - maximum allowed batch number when the transaction can be processed
+ * @input maxNumBatch[nTx] - {Array(Uint32)} - maximum allowed batch number when the transaction can be processed
  * @input onChain[nTx] - {Array(Bool)} - determines if the transaction is L1 or L2
  * @input newAccount[nTx] - {Array(Bool)} - determines if transaction creates a new account
  * @input rqTxCompressedDataV2[nTx] - {Array(Uint193)} - requested encode transaction fields together version 2

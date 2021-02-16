@@ -3,9 +3,9 @@ include "../../node_modules/circomlib/circuits/comparators.circom";
 
 /**
  * Convert float40 bits to large integer
- * large integer = (mantissa + 0.5*half_exponent) * 10^exponent
- * [  mantissa   |  exponent  ]
- * [   35 bits   |   5 bits   ]
+ * large integer = mantissa * 10^exponent
+ * [  exponent  |  mantissa  ]
+ * [   5 bits   |   35 bits  ]
  * @input in[40] - {Array[Bool]} - float40 number encoded as binary array
  * @output out - {Field} - large integer
  */

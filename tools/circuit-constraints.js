@@ -47,8 +47,8 @@ function hashInputsTx(nLevels, nTx, maxL1Tx, maxFeeTx){
     var bitsIndex = nLevels;
     var bitsRoots = 256;
     var bitsChainID = 16;
-    var bitsL1TxsData = maxL1Tx * (2*nLevels + 480);
-    var bitsL2TxsData = nTx * (2*nLevels + 16 + 8);
+    var bitsL1TxsData = maxL1Tx * (2*nLevels + 528);
+    var bitsL2TxsData = nTx * (2*nLevels + 48);
     var bitsFeeTxsData = maxFeeTx * bitsIndex;
 
     const bitsSha256 = 2*bitsIndex + 3*bitsRoots + bitsChainID + bitsL1TxsData + bitsL2TxsData + bitsFeeTxsData;
