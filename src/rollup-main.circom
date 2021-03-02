@@ -40,6 +40,7 @@ include "./fee-tx.circom";
  * @input maxNumBatch[nTx] - {Array(Uint32)} - maximum allowed batch number when the transaction can be processed
  * @input onChain[nTx] - {Array(Bool)} - determines if the transaction is L1 or L2
  * @input newAccount[nTx] - {Array(Bool)} - determines if transaction creates a new account
+ * @input rqOffset[nTx] - {Array(Uint3)} - relative linked transaction
  * @input rqTxCompressedDataV2[nTx] - {Array(Uint193)} - requested encode transaction fields together version 2
  * @input rqToEthAddr[nTx] - {Array(Uint160)} - requested ethereum address receiver
  * @input rqToBjjAy[nTx] - {Array(Field)} - requested babyjubjub y coordinate
@@ -66,6 +67,7 @@ include "./fee-tx.circom";
  * @input ay2[nTx] - {Array(Field)} - ay of the receiver leaf
  * @input ethAddr2[nTx] - {Array(Uint160)} - ethAddr of the receiver leaf
  * @input siblings2[nTx][nLevels + 1] - {Array[Array(Field)]} - siblings merkle proof of the receiver leaf
+ * @input newExit[nTx] - {Array(Bool)} - determines if the transaction create a new account in the exit tree
  * @input isOld0_2[nTx] - {Array(Bool)} - flag to require old key - value
  * @input oldKey2[nTx] - {Array(Uint48)} - old key of the sender leaf
  * @input oldValue2[nTx] - {Array(Field)} - old value of the sender leaf
