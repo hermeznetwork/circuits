@@ -17,14 +17,14 @@ describe("Test decode-float", function () {
 
         circuit = await tester(circuitPath, {reduceConstraints:false});
         await circuit.loadConstraints();
-        console.log("Constraints: " + circuit.constraints.length + "\n");
+        console.log("Constraints DecodeFloat: " + circuit.constraints.length + "\n");
     });
 
     after( async() => {
         fs.unlinkSync(circuitPath);
     });
 
-    it("Should check test vectors", async () => {
+    it("Should check test vectors DecodeFloat", async () => {
         const testVector = [
             [6 * 0x800000000 + 123, "123000000"],
             [2 * 0x800000000 + 4545, "454500"],

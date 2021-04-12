@@ -45,7 +45,7 @@ describe("Test rollup-tx", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_24811mlTj9q2WmRTe";
+        // const pathTmp = "/tmp/circom_13408MrN0Q1ieGunL";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-tx.test.circom"));
     });
 
@@ -801,5 +801,125 @@ describe("Test rollup-tx", function () {
         } catch (error){
             expect(error.message.includes("Constraint doesn't match 1 != 0")).to.be.equal(true);
         }
+    });
+
+    it("Should check L1 'createAccountDepositTransfer' tx max amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+        depositTx(bb, account1, 1, 1000);
+        await bb.build();
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx = {
+            fromIdx: 0,
+            loadAmountF: 500,
+            tokenID: 1,
+            fromBjjCompressed: account2.bjjCompressed,
+            fromEthAddr: account2.ethAddr,
+            toIdx: 256,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+        bb2.addTx(tx);
+        await bb2.build();
+
+        await assertTxs(bb2, circuit);
+    });
+
+    it("Should check L1 'depositTransfer' tx max amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+        depositTx(bb, account1, 1, 1000);
+        depositTx(bb, account2, 1, 2000);
+        await bb.build();
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx = {
+            fromIdx: 256,
+            loadAmountF: 200,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: 257,
+            amount: Constants.maxAmount,
+            userFee: 126,
+            onChain: true
+        };
+        bb2.addTx(tx);
+        await bb2.build();
+
+        await assertTxs(bb2, circuit);
+    });
+
+    it("Should check L1 'forceTransfer' tx max amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+        depositTx(bb, account1, 1, 1000);
+        depositTx(bb, account2, 1, 2000);
+        await bb.build();
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx = {
+            fromIdx: 256,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: 257,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+        bb2.addTx(tx);
+        await bb2.build();
+
+        await assertTxs(bb2, circuit);
+    });
+
+    it("Should check L1 'forceExit' tx max amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+        depositTx(bb, account1, 1, 1000);
+        depositTx(bb, account2, 1, 2000);
+        await bb.build();
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx = {
+            fromIdx: 256,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: Constants.exitIdx,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb2.addTx(tx);
+        await bb2.build();
+
+        await assertTxs(bb2, circuit);
+
+        // second exit in the same batch
+        const bb3 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+        bb3.addTx(tx);
+        bb3.addTx(tx);
+        await bb3.build();
+
+        await assertTxs(bb3, circuit);
     });
 });

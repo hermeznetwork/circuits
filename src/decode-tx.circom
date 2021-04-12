@@ -165,6 +165,7 @@ template DecodeTx(nLevels) {
     ////////
     component n2bAmount = Num2Bits(40);
     n2bAmount.in <== amountF;
+
     component dfAmount = DecodeFloatBin();
     for (i = 0; i < 40; i++) {
         dfAmount.in[i] <== n2bAmount.out[i];

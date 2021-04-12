@@ -54,7 +54,7 @@ describe("Test rollup-main", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_2237qpXQvEiiblzU";
+        // const pathTmp = "/tmp/circom_143290Mkjo5fZFKND";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main.test.circom"));
     });
 
@@ -611,5 +611,228 @@ describe("Test rollup-main", function () {
         } catch (error){
             expect(error.message.includes("Constraint doesn't match")).to.be.equal(true);
         }
+    });
+
+    it("Should check L1 'createAccountDepositTransfer' & L1 'depositTransfer' txs with max amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await depositTx(bb, account2, 1, 1000);
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: 0,
+            loadAmountF: 500,
+            tokenID: 1,
+            fromBjjCompressed: account3.bjjCompressed,
+            fromEthAddr: account3.ethAddr,
+            toIdx: account1.idx,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+
+        const tx2 = {
+            fromIdx: account3.idx,
+            loadAmountF: 200,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account3.ethAddr,
+            toIdx: account2.idx,
+            amount: Constants.maxAmount,
+            userFee: 126,
+            onChain: true
+        };
+
+        bb2.addTx(tx);
+        bb2.addTx(tx2);
+        await bb2.build();
+        await rollupDB.consolidate(bb2);
+
+        await assertBatch(bb2, circuit);
+        await assertAccountsBalances(accounts, [1000, 1500, 200], rollupDB);
+    });
+
+    it("Should check L1 'forceTransfer' & L1 'forceExit' txs with max amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await depositTx(bb, account2, 1, 1000);
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: account2.idx,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+
+        const tx2 = {
+            fromIdx: account2.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account2.ethAddr,
+            toIdx: Constants.exitIdx,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb2.addTx(tx);
+        bb2.addTx(tx2);
+        await bb2.build();
+        await rollupDB.consolidate(bb2);
+
+        await assertBatch(bb2, circuit);
+        await assertAccountsBalances(accounts, [0, 0, null], rollupDB);
+    });
+
+    it("Should check L1 multiple 'forceTransfer' with max amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await depositTx(bb, account2, 1, 1000);
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: account2.idx,
+            amount: 200,
+            userFee: 0,
+            onChain: true
+        };
+
+        const tx2 = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: account2.idx,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb2.addTx(tx);
+        bb2.addTx(tx2);
+        await bb2.build();
+        await rollupDB.consolidate(bb2);
+
+        await assertBatch(bb2, circuit);
+        await assertAccountsBalances(accounts, [0, 2000, null], rollupDB);
+    });
+
+    it("Should check multiple L1 'forceExit' with max amount: max amount && nullify", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: Constants.exitIdx,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+
+        const tx2 = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: Constants.exitIdx,
+            amount: 100,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb2.addTx(tx);
+        bb2.addTx(tx2);
+        await bb2.build();
+        await rollupDB.consolidate(bb2);
+
+        await assertBatch(bb2, circuit);
+        await assertAccountsBalances(accounts, [0, null, null], rollupDB);
+    });
+
+    it("Should check multiple L1 'forceExit' with max amount: regular forceExit && max amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: Constants.exitIdx,
+            amount: 100,
+            userFee: 0,
+            onChain: true
+        };
+
+        const tx2 = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: Constants.exitIdx,
+            amount: Constants.maxAmount,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb2.addTx(tx);
+        bb2.addTx(tx2);
+        await bb2.build();
+        await rollupDB.consolidate(bb2);
+
+        await assertBatch(bb2, circuit);
+        await assertAccountsBalances(accounts, [0, null, null], rollupDB);
     });
 });

@@ -1,5 +1,6 @@
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/comparators.circom";
+include "../node_modules/circomlib/circuits/mux1.circom";
 
 include "./compute-fee.circom";
 
@@ -40,8 +41,9 @@ template BalanceUpdater() {
 
     signal underflowOk;         // 1 if sender balance is > 0
     signal effectiveAmount1;    // original amount to transfer. Set to 0 if tx is NOP.
-    signal effectiveAmount2;    // tx amount once nullifyAmount is applied
-    signal effectiveAmount3;    // tx amount once checked if sender has enough balance(only on L1 tx, L2 will trigger an error)
+    signal effectiveAmount2;    // total balance sender if amount is MAX_AMOUNT and L1
+    signal effectiveAmount3;    // tx amount once nullifyAmount is applied
+    signal effectiveAmount4;    // tx amount once checked if sender has enough balance(only on L1 tx, L2 will trigger an error)
     signal effectiveLoadAmount1; // original loadAmount to load (only applies to L1 tx)
     signal effectiveLoadAmount2; // tx loadAmount once nullifyLoadAmount is applied
 
@@ -59,7 +61,21 @@ template BalanceUpdater() {
     effectiveLoadAmount1 <== loadAmount*onChain;
     effectiveLoadAmount2 <== effectiveLoadAmount1*(1 - nullifyLoadAmount);
     effectiveAmount1 <== amount*(1-nop);
-    effectiveAmount2 <== effectiveAmount1*(1 - nullifyAmount);
+
+    // check if transaction is L1 and signaling max amount
+    var MAX_AMOUNT = 343597383670000000000000000000000000000000;
+    component isAmountMax = IsEqual();
+    isAmountMax.in[0] <== MAX_AMOUNT;
+    isAmountMax.in[1] <== amount;
+
+    component selectEffectiveAmount2 = Mux1();
+    selectEffectiveAmount2.c[0] <== amount;
+    selectEffectiveAmount2.c[1] <== oldStBalanceSender;
+    selectEffectiveAmount2.s <== onChain*isAmountMax.out;
+
+    effectiveAmount2 <== selectEffectiveAmount2.out;
+    // effectiveAmount2 <== amount;
+    effectiveAmount3 <== effectiveAmount2*(1 - nullifyAmount);
 
     // check balance sender
     ////////
@@ -75,7 +91,7 @@ template BalanceUpdater() {
     // - if account has not enough balance, bit 193 will be 0
 
     component n2bSender = Num2Bits(193);
-    n2bSender.in <== (1<<192) + oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount2 - fee2Charge;
+    n2bSender.in <== (1<<192) + oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount3 - fee2Charge;
 
     underflowOk <== n2bSender.out[192];
 
@@ -83,12 +99,12 @@ template BalanceUpdater() {
     (1 - underflowOk)*(1 - onChain) === 0;
 
     // if tx is not valid on L1 due to underflow, transaction amount is processed as a 0 amount
-    effectiveAmount3 <== underflowOk*effectiveAmount2;
+    effectiveAmount4 <== underflowOk*effectiveAmount3;
 
     // compute new balances for sender and receiver
     ////////
-    newStBalanceSender <== oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount3 - fee2Charge;
-    newStBalanceReceiver <== oldStBalanceReceiver + effectiveAmount3;
+    newStBalanceSender <== oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount4 - fee2Charge;
+    newStBalanceReceiver <== oldStBalanceReceiver + effectiveAmount4;
 
     // check if original amount to process is 0
     component effectiveAmountIsZero = IsZero();
@@ -111,3 +127,22 @@ template BalanceUpdater() {
     // otherwise, coordinator could potentially manipuate L1 tx by submitting false account state, nullifying the amount to transfer and
     // bypass the processor
 }
+
+    // // only apply max amount if transaction is L1 and amount is MAX_AMOUNT
+    // signal applyMaxAmount;
+    // applyMaxAmount <== onChain*isAmountMax;
+
+    // check if transaction is L1 and signaling max amount
+    // var MAX_AMOUNT_F = (1<<40) - 1; // 0xFFFFFFFFFF
+
+    // component isAmountMax = IsEqual();
+    // isAmountMax.in[0] <== MAX_AMOUNT_F;
+    // isAmountMax.in[1] <== amountF;
+
+    // component fullBalanceF = CodeFloat();
+    // fullBalanceF.in <== fullBalance;
+
+    // component selectAmountF = Mux1();
+    // selectAmountF.c[0] <== amountF;
+    // selectAmountF.c[1] <== fullBalanceF.out;
+    // selectAmountF.s <== onChain*isAmountMax.out;

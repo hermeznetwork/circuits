@@ -5,6 +5,7 @@ const tester = require("circom").tester;
 const Scalar = require("ffjavascript").Scalar;
 
 const { computeFee } = require("@hermeznetwork/commonjs").feeTable;
+const { Constants } = require("@hermeznetwork/commonjs");
 
 describe("Test balance-updater", function () {
     this.timeout(0);
@@ -166,6 +167,55 @@ describe("Test balance-updater", function () {
         };
 
         await circuit.assertOut(w, output);
+    });
+
+    it("Should check max amount L1 transaction", async () => {
+        const input = {
+            oldStBalanceSender: 100,
+            oldStBalanceReceiver: 200,
+            amount: Constants.maxAmount,
+            loadAmount: 50,
+            feeSelector: 200,
+            onChain: 1,
+            nop: 0,
+            nullifyLoadAmount: 0,
+            nullifyAmount: 0,
+        };
+
+        const w = await circuit.calculateWitness(input, {logOutput: false});
+
+        const feeApplied = Scalar.e(0);
+
+        const output = {
+            newStBalanceSender: input.loadAmount,
+            newStBalanceReceiver: Scalar.add(input.oldStBalanceSender, input.oldStBalanceReceiver),
+            fee2Charge: feeApplied,
+            isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
+            isAmountNullified: 0,
+        };
+
+        await circuit.assertOut(w, output);
+    });
+
+    it("Should check max amount not affects on L2 transaction, triggers overflow error", async () => {
+        const input = {
+            oldStBalanceSender: 100,
+            oldStBalanceReceiver: 200,
+            amount: Constants.maxAmount,
+            loadAmount: 0,
+            feeSelector: 1,
+            onChain: 0,
+            nop: 0,
+            nullifyLoadAmount: 0,
+            nullifyAmount: 0,
+        };
+
+        try {
+            await circuit.calculateWitness(input, {logOutput: false});
+            expect(true).to.be.equal(false);
+        } catch (err) {
+            expect(err.message.includes("Constraint doesn't match 1 != 0")).to.be.equal(true);
+        }
     });
 
     it("Should check underflow error on L2 tx", async () => {

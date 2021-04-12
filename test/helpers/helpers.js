@@ -165,6 +165,16 @@ async function assertAccountsBalances(accounts, balances, rollupDb){
     }
 }
 
+async function printAccounts(accounts, rollupDb){
+    for (let i = 0; i < accounts.length; i++){
+        const idx = accounts[i].idx;
+        const res = await rollupDb.getStateByIdx(idx);
+        console.log(`<== ACCOUNT ${idx} ==>`);
+        console.log(res);
+        console.log("\n\n");
+    }
+}
+
 async function printSignals(signals, circuit, w){
     for (let i = 0; i < signals.length ;i++){
         const value = await circuit.getSignal(w, `${signals[i]}`);
@@ -197,4 +207,5 @@ module.exports = {
     assertAccountsBalances,
     printSignals,
     printBatchOutputs,
+    printAccounts
 };

@@ -53,7 +53,7 @@ describe("Test rollup-main L1 transactions", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_30968hGUXakefukFo";
+        // const pathTmp = "/tmp/circom_16736oU56a2x9KFkn";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main-L1.test.circom"));
     });
 
@@ -142,12 +142,12 @@ describe("Test rollup-main L1 transactions", function () {
         // loadAmountF
         let bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
 
-        // 0 and 0xffff loadAmountF
+        // 0 and 0xffffffffff loadAmountF
         const tx1 = Object.assign({}, tx);
         tx1.loadAmountF = 0;
 
         const tx2 = Object.assign({}, tx);
-        tx2.loadAmountF = 0xFFFF;
+        tx2.loadAmountF = Constants.maxAmountF - 1;
 
         bb.addTx(tx1);
         bb.addTx(tx2);
@@ -180,26 +180,26 @@ describe("Test rollup-main L1 transactions", function () {
         // fromBjj edge cases has been tested in `createAccount`
         // loadAmountF edge cases has been tested in `createAccountDeposit`
 
-        // 0 and 0xffff amountF
+        // 0 and 0xffffffffff amountF
         bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
 
         const tx1 = Object.assign({}, tx);
         tx1.amountF = 0;
 
         const tx2 = Object.assign({}, tx);
-        tx2.amountF = 0xFFFF; // not enough funds in sender. Nullify amount transfer.
+        tx2.amountF = Constants.maxAmountF - 1; // not enough funds in sender. Nullify amount transfer.
 
         bb.addTx(tx1);
         bb.addTx(tx2);
         await bb.build();
         await assertBatch(bb, circuit);
 
-        // 0xffff on with amountF and loadAmountF
+        // 0xffffffffff on with amountF and loadAmountF
         bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
 
         const tx3 = Object.assign({}, tx);
-        tx3.loadAmountF = 0xFFFF;
-        tx3.amountF = 0xFFFF; // enough funds in sender. Transfer with all loadAmount.
+        tx3.loadAmountF = Constants.maxAmountF;
+        tx3.amountF = Constants.maxAmountF - 1; // enough funds in sender. Transfer with all loadAmount.
 
         bb.addTx(tx3);
         await bb.build();
