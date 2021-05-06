@@ -53,7 +53,7 @@ describe("Test rollup-main L1 transactions", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_30968hGUXakefukFo";
+        // const pathTmp = "/tmp/circom_21395lnVeHFrhxFAm";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main-L1.test.circom"));
     });
 
@@ -215,9 +215,6 @@ describe("Test rollup-main L1 transactions", function () {
         await bb.build();
         await assertBatch(bb, circuit);
     });
-
-    // NOTE: It is assumed that edge cases for amountF and loadAmountF are considered tested for
-    // all transactions types
 
     it("Should process L1 'deposit' txs edge cases", async () => {
         const rollupDB = await newState();
@@ -397,6 +394,26 @@ describe("Test rollup-main L1 transactions", function () {
         bb.addTx(tx3);
         await bb.build();
         await assertBatch(bb, circuit);
+
+        // transfer 0 amount
+        bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        const tx4 = Object.assign({}, tx);
+        tx4.amount = 0;
+
+        bb.addTx(tx4);
+        await bb.build();
+        await assertBatch(bb, circuit);
+
+        // 2 transfers: amount != 0 & amount = 0
+        bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        const tx5 = Object.assign({}, tx);
+        const tx6 = Object.assign({}, tx);
+        tx6.amount = 0;
+
+        bb.addTx(tx5);
+        bb.addTx(tx6);
+        await bb.build();
+        await assertBatch(bb, circuit);
     });
 
     it("Should process L1 'forceExit' txs edge cases", async () => {
@@ -443,6 +460,28 @@ describe("Test rollup-main L1 transactions", function () {
         tx3.fromEthAddr = account2.ethAddr;
 
         bb.addTx(tx3);
+        await bb.build();
+        await assertBatch(bb, circuit);
+
+        // force exit with amount = 0
+        // should not create a new leaf in the exit tree
+        bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        const tx4 = Object.assign({}, tx);
+        tx4.amount = 0;
+
+        bb.addTx(tx4);
+        await bb.build();
+        await assertBatch(bb, circuit);
+
+        // 2 force exits: amount != 0 & amount = 0
+        // should not create a new leaf in the exit tree
+        bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        const tx5 = Object.assign({}, tx);
+        const tx6 = Object.assign({}, tx);
+        tx6.amount = 0;
+
+        bb.addTx(tx5);
+        bb.addTx(tx6);
         await bb.build();
         await assertBatch(bb, circuit);
     });

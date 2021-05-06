@@ -54,7 +54,7 @@ describe("Test rollup-main", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_2237qpXQvEiiblzU";
+        // const pathTmp = "/tmp/circom_18028JW3Ssqj744Ko";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main.test.circom"));
     });
 
@@ -332,6 +332,149 @@ describe("Test rollup-main", function () {
 
         await assertBatch(bb3, circuit);
         await assertAccountsBalances(accounts, [900, 25, null], rollupDB);
+    });
+
+    it("Should check L2 'transfer' & L2 'exit' with 0 amount", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await depositTx(bb, account2, 1, 1000);
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        // transfer with amount = 0
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: account2.idx,
+            amount: 0,
+            userFee: 0,
+            onChain: 0,
+            nonce: 0,
+        };
+
+        account1.signTx(tx);
+        bb2.addTx(tx);
+        await bb2.build();
+
+        await rollupDB.consolidate(bb2);
+
+        await assertBatch(bb2, circuit);
+        await assertAccountsBalances(accounts, [1000, 1000, null], rollupDB);
+
+        // exit with amount = 0
+        const bb3 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx2 = {
+            fromIdx: account2.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: Constants.exitIdx,
+            amount: 0,
+            userFee: 0,
+            nonce: 0,
+            onChain: 0,
+        };
+
+        account2.signTx(tx2);
+        bb3.addTx(tx2);
+        await bb3.build();
+
+        await rollupDB.consolidate(bb3);
+
+        await assertBatch(bb3, circuit);
+        await assertAccountsBalances(accounts, [1000, 1000, null], rollupDB);
+
+        // perform two exits in the same batch
+        // first one with amount != 0 and second one with amount = 0
+        const bb4 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx3 = {
+            fromIdx: account2.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: Constants.exitIdx,
+            amount: 500,
+            userFee: 0,
+            nonce: 1,
+            onChain: 0,
+        };
+
+        const tx4 = {
+            fromIdx: account2.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: Constants.exitIdx,
+            amount: 0,
+            userFee: 0,
+            nonce: 2,
+            onChain: 0,
+        };
+
+        account2.signTx(tx3);
+        account2.signTx(tx4);
+        bb4.addTx(tx3);
+        bb4.addTx(tx4);
+        await bb4.build();
+
+        await rollupDB.consolidate(bb4);
+
+        await assertBatch(bb4, circuit);
+        await assertAccountsBalances(accounts, [1000, 500, null], rollupDB);
+
+        // perform two transfers in the same batch
+        // first one with amount != 0 and second one with amount = 0
+        const bb5 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx5 = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: account2.idx,
+            amount: 500,
+            userFee: 0,
+            nonce: 1,
+            onChain: 0,
+        };
+
+        const tx6 = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: account2.idx,
+            amount: 0,
+            userFee: 0,
+            nonce: 2,
+            onChain: 0,
+        };
+
+        account1.signTx(tx5);
+        account1.signTx(tx6);
+        bb5.addTx(tx5);
+        bb5.addTx(tx6);
+        await bb5.build();
+
+        await rollupDB.consolidate(bb5);
+
+        await assertBatch(bb5, circuit);
+        await assertAccountsBalances(accounts, [500, 1000, null], rollupDB);
     });
 
     it("Should check L2 'transfer' with fees & L2 'fee' txs", async () => {
