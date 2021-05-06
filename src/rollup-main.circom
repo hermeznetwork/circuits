@@ -66,7 +66,7 @@ include "./fee-tx.circom";
  * @input ay2[nTx] - {Array(Field)} - ay of the receiver leaf
  * @input ethAddr2[nTx] - {Array(Uint160)} - ethAddr of the receiver leaf
  * @input siblings2[nTx][nLevels + 1] - {Array[Array(Field)]} - siblings merkle proof of the receiver leaf
- * @input newExit[nTx] - {Array(Bool)} - determines if the transaction createsq a new account in the exit tree
+ * @input newExit[nTx] - {Array(Bool)} - determines if the transaction creates a new account in the exit tree
  * @input isOld0_2[nTx] - {Array(Bool)} - flag to require old key - value
  * @input oldKey2[nTx] - {Array(Uint48)} - old key of the sender leaf
  * @input oldValue2[nTx] - {Array(Field)} - old value of the sender leaf
