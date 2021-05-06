@@ -45,7 +45,7 @@ describe("Test rollup-tx", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_24811mlTj9q2WmRTe";
+        // const pathTmp = "/tmp/circom_5800w3wbQYws58WN";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-tx.test.circom"));
     });
 
@@ -173,6 +173,7 @@ describe("Test rollup-tx", function () {
         await bb.build();
         await rollupDB.consolidate(bb);
 
+        // force transfer with amount != 0
         const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
 
         const tx = {
@@ -186,10 +187,30 @@ describe("Test rollup-tx", function () {
             userFee: 0,
             onChain: true
         };
+        const tx2 = Object.assign({}, tx);
+
         bb2.addTx(tx);
         await bb2.build();
 
         await assertTxs(bb2, circuit);
+
+        // force transfer with 0 amount
+        const bb3 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        tx2.amount = 0;
+        bb3.addTx(tx2);
+        await bb3.build();
+
+        await assertTxs(bb3, circuit);
+
+        // two force transfers: amount != 0  & amount = 0
+        const bb4 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        bb4.addTx(tx);
+        bb4.addTx(tx2);
+        await bb4.build();
+
+        await assertTxs(bb4, circuit);
     });
 
     it("Should check L1 'forceExit' tx", async () => {
@@ -201,6 +222,7 @@ describe("Test rollup-tx", function () {
         await bb.build();
         await rollupDB.consolidate(bb);
 
+        // force exit with amount != 0
         const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
 
         const tx = {
@@ -214,19 +236,40 @@ describe("Test rollup-tx", function () {
             userFee: 0,
             onChain: true
         };
+        const tx2 = Object.assign({}, tx);
 
         bb2.addTx(tx);
         await bb2.build();
 
         await assertTxs(bb2, circuit);
 
-        // second exit in the same batch
+        // two force exits in the same batch
         const bb3 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
         bb3.addTx(tx);
         bb3.addTx(tx);
         await bb3.build();
 
         await assertTxs(bb3, circuit);
+
+        // force exit with 0 amount
+        const bb4 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        tx2.amount = 0;
+
+        bb4.addTx(tx2);
+        await bb4.build();
+
+        await assertTxs(bb4, circuit);
+
+        // two force exits: amount != 0  & amount = 0
+        const bb5 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        bb5.addTx(tx);
+        bb5.addTx(tx2);
+        await bb5.build();
+
+        await assertTxs(bb5, circuit);
     });
 
     it("Should check L2 'transfer' tx", async () => {
@@ -238,6 +281,7 @@ describe("Test rollup-tx", function () {
         await bb.build();
         await rollupDB.consolidate(bb);
 
+        // transfer with amount != 0
         const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
 
         const tx = {
@@ -252,12 +296,44 @@ describe("Test rollup-tx", function () {
             onChain: 0,
             nonce: 0,
         };
+        const tx2 = Object.assign({}, tx);
+        const tx3 = Object.assign({}, tx);
+        const tx4 = Object.assign({}, tx);
+
         account1.signTx(tx);
+
         bb2.addTx(tx);
         bb2.addToken(tx.tokenID);
         await bb2.build();
 
         await assertTxs(bb2, circuit);
+
+        // transfer with amount = 0
+        const bb3 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        tx2.amount = 0;
+        account1.signTx(tx2);
+
+        bb3.addTx(tx2);
+        bb3.addToken(tx2.tokenID);
+        await bb3.build();
+
+        await assertTxs(bb3, circuit);
+
+        // two transfers: amount != 0 & amount = 0
+        const bb4 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        account1.signTx(tx3);
+        tx4.amount = 0;
+        tx4.nonce = 1;
+        account1.signTx(tx4);
+
+        bb4.addTx(tx3);
+        bb4.addTx(tx4);
+        bb4.addToken(tx3.tokenID);
+        await bb4.build();
+
+        await assertTxs(bb4, circuit);
     });
 
     it("Should check L2 'exit' tx", async () => {
@@ -269,6 +345,7 @@ describe("Test rollup-tx", function () {
         await bb.build();
         await rollupDB.consolidate(bb);
 
+        // exit with amount != 0
         const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
 
         const tx = {
@@ -283,17 +360,55 @@ describe("Test rollup-tx", function () {
             nonce: 0,
             onChain: 0,
         };
-        account1.signTx(tx);
-        bb2.addTx(tx);
-
         const tx2 = Object.assign({}, tx);
-        tx2.nonce = 1;
-        account1.signTx(tx2);
-        bb2.addTx(tx2);
+        const tx3 = Object.assign({}, tx);
+        const tx4 = Object.assign({}, tx);
+        const tx5 = Object.assign({}, tx);
 
+        account1.signTx(tx);
+
+        bb2.addTx(tx);
         await bb2.build();
 
         await assertTxs(bb2, circuit);
+
+        // two exits with amount != 0
+        const bb3 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        account1.signTx(tx2);
+        tx3.nonce = 1;
+        account1.signTx(tx3);
+
+        bb3.addTx(tx2);
+        bb3.addTx(tx3);
+        await bb3.build();
+
+        await assertTxs(bb3, circuit);
+
+        // exit with amount = 0
+        const bb4 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        tx4.amount = 0;
+        account1.signTx(tx4);
+
+        bb4.addTx(tx4);
+        await bb4.build();
+
+        await assertTxs(bb4, circuit);
+
+        // two exits: amount != 0 & amount = 0
+        const bb5 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        account1.signTx(tx4);
+        tx5.amount = 0;
+        tx5.nonce = 1;
+        account1.signTx(tx5);
+
+        bb5.addTx(tx4);
+        bb5.addTx(tx5);
+        await bb5.build();
+
+        await assertTxs(bb5, circuit);
     });
 
     it("Should check L2 'transfer to ethAddr' tx", async () => {

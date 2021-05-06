@@ -21,7 +21,7 @@
   "author": "HermezDAO",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@hermeznetwork/commonjs": "^0.3.0",
+    "@hermeznetwork/commonjs": "^0.3.2",
     "circom": "^0.5.35",
     "circom_runtime": "^0.1.9",
     "circomlib": "^0.5.0",

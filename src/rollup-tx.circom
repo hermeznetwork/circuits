@@ -61,6 +61,7 @@ include "./lib/decode-float.circom"
  * @input nonce2 - {Uint40} - nonce of the receiver leaf
  * @input sign2 - {Bool} - sign of the receiver leaf
  * @input balance2 - {Uint192} - balance of the receiver leaf
+ * @input newExit - {Array(Bool)} - determines if the transaction creates a new account in the exit tree
  * @input ay2 - {Field} - ay of the receiver leaf
  * @input ethAddr2 - {Uint160} - ethAddr of the receiver leaf
  * @input siblings2[nLevels + 1] - {Array(Field)} - siblings merkle proof of the receiver leaf
@@ -494,6 +495,7 @@ template RollupTx(nLevels, maxFeeTx) {
     balanceUpdater.nullifyAmount <== states.nullifyAmount;
 
     isAmountNullified <== balanceUpdater.isAmountNullified;
+
     // H - accumulate fees
     ////////
     component feeAccumulator = FeeAccumulator(maxFeeTx);
