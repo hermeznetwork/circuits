@@ -54,7 +54,7 @@ describe("Test rollup-main", function () {
         console.log("Constraints: " + circuit.constraints.length + "\n");
 
         // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_18028JW3Ssqj744Ko";
+        // const pathTmp = "/tmp/circom_24246Z1wv2psTPy6l";
         // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main.test.circom"));
     });
 
@@ -693,6 +693,127 @@ describe("Test rollup-main", function () {
         await bb4.build();
 
         await assertBatch(bb4, circuit);
+    });
+
+    it("Should check L2 'transfer to ethAddr' with rqOffset txs", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await depositTx(bb, account2, 1, 1000);
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: Constants.nullIdx,
+            toEthAddr: account1.ethAddr,
+            amount: 150,
+            userFee: 126,
+            onChain: 0,
+            nonce: 0,
+        };
+
+        const tx2 = {
+            fromIdx: account2.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: account1.idx,
+            amount: 100,
+            userFee: 126,
+            nonce: 0,
+            onChain: 0,
+        };
+
+        // tx2 to be processed only if tx1 is processed before
+        tx2.rqOffset = 7; // pastTx[0]
+        tx2.rqTxCompressedDataV2 = txUtils.buildTxCompressedDataV2(tx);
+        tx2.rqToEthAddr = tx.toEthAddr || 0;
+        tx2.rqToBjjAy = tx.toBjjAy || 0;
+
+        account1.signTx(tx);
+        account2.signTx(tx2);
+        bb2.addTx(tx);
+        bb2.addTx(tx2);
+        bb2.addToken(tx.tokenID);
+        await bb2.build();
+
+        await assertBatch(bb2, circuit);
+    });
+
+    it("Should check L2 'transfer to bjj' with rqOffset txs", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        // simulate L1 coordinator create Bjj account
+        bb.addTx({
+            fromIdx: 0,
+            loadAmountF: float40.fix2Float(1000),
+            tokenID: 1,
+            fromBjjCompressed: account2.bjjCompressed,
+            fromEthAddr: Constants.nullEthAddr,
+            toIdx: Constants.nullIdx,
+            onChain: true
+        });
+        await bb.build();
+
+        await rollupDB.consolidate(bb);
+
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: Constants.nullIdx,
+            toEthAddr: Constants.nullEthAddr,
+            toBjjAy: account2.ay,
+            toBjjSign: account2.sign,
+            amount: 150,
+            userFee: 126,
+            onChain: 0,
+            nonce: 0,
+        };
+
+        const tx2 = {
+            fromIdx: account2.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: account1.idx,
+            amount: 100,
+            userFee: 126,
+            nonce: 0,
+            onChain: 0,
+        };
+
+        // tx2 to be processed only if tx1 is processed before
+        tx2.rqOffset = 7; // pastTx[0]
+        tx2.rqTxCompressedDataV2 = txUtils.buildTxCompressedDataV2(tx);
+        tx2.rqToEthAddr = tx.toEthAddr || 0;
+        tx2.rqToBjjAy = tx.toBjjAy || 0;
+
+        account1.signTx(tx);
+        account2.signTx(tx2);
+        bb2.addTx(tx);
+        bb2.addTx(tx2);
+        bb2.addToken(tx.tokenID);
+        await bb2.build();
+
+        await assertBatch(bb2, circuit);
     });
 
     it("Should check L2 'transfer' with maxNumBatch", async () => {

@@ -21,10 +21,10 @@
   "author": "HermezDAO",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@hermeznetwork/commonjs": "^0.3.2",
-    "circom": "^0.5.35",
+    "@hermeznetwork/commonjs": "^0.3.3",
+    "circom": "^0.5.45",
     "circom_runtime": "^0.1.9",
-    "circomlib": "^0.5.0",
+    "circomlib": "^0.5.2",
     "ffiasm": "^0.1.1",
     "ffjavascript": "^0.2.33",
     "snarkjs": "^0.3.59",
