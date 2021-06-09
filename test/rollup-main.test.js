@@ -762,7 +762,7 @@ describe("Test rollup-main", function () {
             tokenID: 1,
             fromBjjCompressed: account2.bjjCompressed,
             fromEthAddr: Constants.nullEthAddr,
-            toIdx: 0,
+            toIdx: Constants.nullIdx,
             onChain: true
         });
         await bb.build();
