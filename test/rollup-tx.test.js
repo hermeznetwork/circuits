@@ -14,6 +14,10 @@ const { depositTx, getSingleTxInput, assertTxs } = require("./helpers/helpers");
 
 describe("Test rollup-tx", function () {
     this.timeout(0);
+
+    const reuse = false;
+    const pathTmp = "/tmp/circom_28537fw4bNa2wkhW";
+
     let circuitPath = path.join(__dirname, "rollup-tx.test.circom");
     let circuit;
 
@@ -33,24 +37,26 @@ describe("Test rollup-tx", function () {
     }
 
     before( async() => {
-        const circuitCode = `
-            include "../src/rollup-tx.circom";
-            component main = RollupTx(${nLevels}, ${nTokens});
-        `;
+        if (!reuse){
+            const circuitCode = `
+                include "../src/rollup-tx.circom";
+                component main = RollupTx(${nLevels}, ${nTokens});
+            `;
 
-        fs.writeFileSync(circuitPath, circuitCode, "utf8");
+            fs.writeFileSync(circuitPath, circuitCode, "utf8");
 
-        circuit = await tester(circuitPath, {reduceConstraints:false});
-        await circuit.loadConstraints();
-        console.log("Constraints: " + circuit.constraints.length + "\n");
-
-        // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_5800w3wbQYws58WN";
-        // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-tx.test.circom"));
+            circuit = await tester(circuitPath, {reduceConstraints:false});
+            await circuit.loadConstraints();
+            console.log("Constraints: " + circuit.constraints.length + "\n");
+        } else {
+            const testerAux = require("circom").testerAux;
+            circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-tx.test.circom"));
+        }
     });
 
     after( async() => {
-        fs.unlinkSync(circuitPath);
+        if (!reuse)
+            fs.unlinkSync(circuitPath);
     });
 
     it("Should check nop tx", async () => {
@@ -918,3 +924,16 @@ describe("Test rollup-tx", function () {
         }
     });
 });
+
+
+// await rollupDB.consolidate(bb3);
+
+//         const stateA = await rollupDB.getStateByIdx(256);
+//         const stateB = await rollupDB.getStateByIdx(257);
+
+//         console.log(stateA);
+//         console.log(`   ${Scalar.fromString(stateA.ay, 16)}`);
+//         console.log(`   ${Scalar.fromString(stateA.ethAddr, 16)}`);
+//         console.log(stateB);
+//         console.log(`   ${Scalar.fromString(stateB.ay, 16)}`);
+//         console.log(`   ${Scalar.fromString(stateB.ethAddr, 16)}`);

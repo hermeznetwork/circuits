@@ -190,7 +190,7 @@ async function generateSolidityVerifier(nTx, nLevels, maxL1Tx, maxFeeTx){
     const solName = `${circuitName}-${nTx}-${nLevels}-${maxL1Tx}-${maxFeeTx}_verifier.sol`;
 
     if (!fs.existsSync(path.join(pathName, zkeyName))) {
-        console.log(`ZKey file ${path.join(pathName,zkeyName)} doesnt exist`);
+        console.log(`ZKey file ${path.join(pathName,zkeyName)} does not exist`);
         return;
     }
 

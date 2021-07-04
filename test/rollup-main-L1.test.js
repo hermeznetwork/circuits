@@ -13,6 +13,10 @@ const { depositTx, assertBatch } = require("./helpers/helpers");
 
 describe("Test rollup-main L1 transactions", function () {
     this.timeout(0);
+
+    const reuse = false;
+    const pathTmp = "/tmp/circom_30032vVekuTkAbazR";
+
     let circuitPath = path.join(__dirname, "rollup-main-L1.test.circom");
     let circuit;
 
@@ -41,24 +45,26 @@ describe("Test rollup-main L1 transactions", function () {
     }
 
     before( async() => {
-        const circuitCode = `
-            include "../src/rollup-main.circom";
-            component main = RollupMain(${nTx}, ${nLevels}, ${maxL1Tx}, ${maxFeeTx});
-        `;
+        if (!reuse){
+            const circuitCode = `
+                include "../src/rollup-main.circom";
+                component main = RollupMain(${nTx}, ${nLevels}, ${maxL1Tx}, ${maxFeeTx});
+            `;
 
-        fs.writeFileSync(circuitPath, circuitCode, "utf8");
+            fs.writeFileSync(circuitPath, circuitCode, "utf8");
 
-        circuit = await tester(circuitPath, {reduceConstraints:false});
-        await circuit.loadConstraints();
-        console.log("Constraints: " + circuit.constraints.length + "\n");
-
-        // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_21395lnVeHFrhxFAm";
-        // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main-L1.test.circom"));
+            circuit = await tester(circuitPath, {reduceConstraints:false});
+            await circuit.loadConstraints();
+            console.log("Constraints: " + circuit.constraints.length + "\n");
+        } else {
+            const testerAux = require("circom").testerAux;
+            circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "rollup-main-L1.test.circom"));
+        }
     });
 
     after( async() => {
-        fs.unlinkSync(circuitPath);
+        if (!reuse)
+            fs.unlinkSync(circuitPath);
     });
 
     // table parameters L1 transactions

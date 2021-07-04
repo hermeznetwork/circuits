@@ -1,3 +1,4 @@
+const { expect } = require("chai");
 const fs = require("fs");
 const path = require("path");
 const tester = require("circom").tester;
@@ -38,7 +39,7 @@ describe("Test rollup-tx-states", function () {
     it("Should check states for L1 'createAccountDeposit' tx", async () => {
         // Should take auxFromIdx as key1
         // Should INSERT on first processor
-        // Should not matter key 2 and processor 2 since amount would be 0
+        // Should NOP on second processor
 
         const input = {
             fromIdx: 0,
@@ -47,7 +48,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 256,
             auxToIdx: 0,
             amount: 0,
-            newExit: 0,
             loadAmount: 30,
             newAccount: 1,
             onChain: 1,
@@ -61,12 +61,13 @@ describe("Test rollup-tx-states", function () {
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 1,
             key1: input.auxFromIdx,
             P1_fnc0: 1,
             P1_fnc1: 0,
             key2: 0,
             P2_fnc0: 0,
-            P2_fnc1: 1,
+            P2_fnc1: 0,
             isExit: 0,
             verifySignEnabled: 0,
             nop: 0,
@@ -91,7 +92,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 256,
             auxToIdx: 0,
             amount: 10,
-            newExit: 0,
             loadAmount: 30,
             newAccount: 1,
             onChain: 1,
@@ -105,6 +105,7 @@ describe("Test rollup-tx-states", function () {
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 1,
             key1: input.auxFromIdx,
             P1_fnc0: 1,
             P1_fnc1: 0,
@@ -131,7 +132,7 @@ describe("Test rollup-tx-states", function () {
     it("Should check states for L1 'deposit' tx", async () => {
         // Should take fromIdx as key1
         // Should UPDATE on processor 1
-        // Should not matter key 2 and processor 2 since amount would be 0
+        // Should NOP on processor2
 
         const input = {
             fromIdx: 256,
@@ -140,7 +141,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 0,
             auxToIdx: 0,
             amount: 0,
-            newExit: 0,
             loadAmount: 30,
             newAccount: 0,
             onChain: 1,
@@ -154,12 +154,13 @@ describe("Test rollup-tx-states", function () {
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 0,
             key1: input.fromIdx,
             P1_fnc0: 0,
             P1_fnc1: 1,
             key2: 0,
             P2_fnc0: 0,
-            P2_fnc1: 1,
+            P2_fnc1: 0,
             isExit: 0,
             verifySignEnabled: 0,
             nop: 0,
@@ -170,10 +171,16 @@ describe("Test rollup-tx-states", function () {
         };
         await circuit.assertOut(w, output);
 
-        // Should check nullify load amount with different tokenID1
+        // Should check nullify load amount with different tokenID user parameter
         input.tokenID = 2;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         output.nullifyLoadAmount = 1;
+        await circuit.assertOut(w, output);
+
+        // Should check nullify load amount with different tokenID1 coordinator parameter
+        input.tokenID = 4;
+        input.tokenID1 = 2;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         await circuit.assertOut(w, output);
     });
 
@@ -185,12 +192,11 @@ describe("Test rollup-tx-states", function () {
 
         const input = {
             fromIdx: 256,
-            toIdx: 0,
+            toIdx: 257,
             toEthAddr: 0,
             auxFromIdx: 0,
             auxToIdx: 0,
             amount: 30,
-            newExit: 0,
             loadAmount: 30,
             newAccount: 0,
             onChain: 1,
@@ -204,6 +210,7 @@ describe("Test rollup-tx-states", function () {
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 0,
             key1: input.fromIdx,
             P1_fnc0: 0,
             P1_fnc1: 1,
@@ -220,26 +227,45 @@ describe("Test rollup-tx-states", function () {
         };
         await circuit.assertOut(w, output);
 
-        // Should check nullify load amount & nullify amount with different tokenID1
+        // Should check nullify load amount & nullify amount with different tokenID1 coordinator parameter
         input.tokenID1 = 4;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         output.nullifyLoadAmount = 1;
         output.nullifyAmount = 1;
         await circuit.assertOut(w, output);
 
-        // Should check nullify amount with different ethAddr1
+        // Should check nullify load amount & nullify amount with different tokenID user parameter
         input.tokenID1 = 3;
+        input.tokenID = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different ethAddr1 coordinator parameter
+        input.tokenID = 3;
         input.ethAddr1 = 4;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         output.nullifyLoadAmount = 0;
         output.nullifyAmount = 1;
         await circuit.assertOut(w, output);
 
-        // Should check nullify amount with different tokenID2
+        // Should check nullify amount with different fromEthAddr user parameter
+        input.ethAddr1 = 2;
+        input.fromEthAddr = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different tokenID2 coordinator parameter
         input.tokenID2 = 4;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         output.nullifyLoadAmount = 0;
         output.nullifyAmount = 1;
+        await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different tokenID user parameter
+        input.tokenID2 = 3;
+        input.tokenID = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        output.nullifyLoadAmount = 1; // mismatch with tokenID1
         await circuit.assertOut(w, output);
     });
 
@@ -251,12 +277,11 @@ describe("Test rollup-tx-states", function () {
 
         const input = {
             fromIdx: 256,
-            toIdx: 0,
+            toIdx: 257,
             toEthAddr: 0,
             auxFromIdx: 0,
             auxToIdx: 0,
             amount: 30,
-            newExit: 0,
             loadAmount: 0,
             newAccount: 0,
             onChain: 1,
@@ -270,6 +295,7 @@ describe("Test rollup-tx-states", function () {
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 0,
             key1: input.fromIdx,
             P1_fnc0: 0,
             P1_fnc1: 1,
@@ -286,37 +312,53 @@ describe("Test rollup-tx-states", function () {
         };
         await circuit.assertOut(w, output);
 
-        // Should check nullify amount with different ethAddr
+        // Should check nullify amount with different ethAddr coordinator parameter
         input.ethAddr1 = 4;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         output.nullifyLoadAmount = 0;
         output.nullifyAmount = 1;
         await circuit.assertOut(w, output);
 
-        // Should check nullify amount with different tokenID1
+        // Should check nullify amount with different fromEthAddr user parameter
         input.ethAddr1 = 2;
+        input.fromEthAddr = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different tokenID1 coordinator parameter
+        input.fromEthAddr = 2;
         input.tokenID1 = 4;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         output.nullifyLoadAmount = 0;
         output.nullifyAmount = 1;
         await circuit.assertOut(w, output);
 
-        // Should check nullify amount with different tokenID2
+        // Should check nullify amount with different tokenID user parameter
         input.tokenID1 = 3;
+        input.tokenID = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different tokenID2 coordinator parameter
+        input.tokenID = 3;
         input.tokenID2 = 2;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         output.nullifyLoadAmount = 0;
         output.nullifyAmount = 1;
         await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different tokenID user parameter
+        input.tokenID2 = 3;
+        input.tokenID = 2;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
     });
 
     it("Should check states for L1 'forceExit' tx", async () => {
-        // First exit transaction (INSERT leaf signaling by newExit == 0 field)
-
         // Should take fromIdx as key1
         // Should UPDATE on processor 1
         // Should take fromIdx as key2
-        // Should INSERT on processor 2
+        // Should UPDATE on processor 2
 
         const input = {
             fromIdx: 256,
@@ -325,7 +367,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 0,
             auxToIdx: 0,
             amount: 30,
-            newExit: 1,
             loadAmount: 0,
             newAccount: 0,
             onChain: 1,
@@ -339,12 +380,13 @@ describe("Test rollup-tx-states", function () {
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         let output = {
+            isP1Insert: 0,
             key1: input.fromIdx,
             P1_fnc0: 0,
             P1_fnc1: 1,
             key2: input.fromIdx,
-            P2_fnc0: 1,
-            P2_fnc1: 0,
+            P2_fnc0: 0,
+            P2_fnc1: 1,
             isExit: 1,
             verifySignEnabled: 0,
             nop: 0,
@@ -355,29 +397,42 @@ describe("Test rollup-tx-states", function () {
         };
         await circuit.assertOut(w, output);
 
-        // Should check not nullify amount with different tokenID2
+        // Should check nullify amount with different ethAddr coordinator parameter
+        input.ethAddr1 = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        output.nullifyAmount = 1;
+        await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different fromEthAddr user parameter
+        input.ethAddr1 = 2;
+        input.fromEthAddr = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different tokenID1 coordinator parameter
+        input.fromEthAddr = 2;
+        input.tokenID1 = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        output.nullifyLoadAmount = 0;
+        output.nullifyAmount = 1;
+        await circuit.assertOut(w, output);
+
+        // Should check nullify amount with different tokenID user parameter
+        input.tokenID1 = 3;
+        input.tokenID = 4;
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
+
+        // Should check not nullify amount with different tokenID2 coordinator parameter
+        input.tokenID = 3;
         input.tokenID2 = 4;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         await circuit.assertOut(w, output);
 
-        // Further exit transactions (UPDATE leaf signaling by newExit != 0 field)
-        // nullifier amount is active
-        input.newExit = 0;
+        // Should check not nullify amount with different tokenID user parameter
+        input.tokenID2 = 3;
+        input.tokenID = 4;
         w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
-        output = {
-            key1: input.fromIdx,
-            P1_fnc0: 0,
-            P1_fnc1: 1,
-            key2: input.fromIdx,
-            P2_fnc0: 0,
-            P2_fnc1: 1,
-            isExit: 1,
-            verifySignEnabled: 0,
-            checkToEthAddr: 0,
-            checkToBjj: 0,
-            nullifyLoadAmount: 0,
-            nullifyAmount: 1,
-        };
         await circuit.assertOut(w, output);
     });
 
@@ -394,7 +449,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 0,
             auxToIdx: 0,
             amount: 30,
-            newExit: 0,
             loadAmount: 0,
             newAccount: 0,
             onChain: 0,
@@ -408,6 +462,7 @@ describe("Test rollup-tx-states", function () {
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 0,
             key1: input.fromIdx,
             P1_fnc0: 0,
             P1_fnc1: 1,
@@ -426,12 +481,10 @@ describe("Test rollup-tx-states", function () {
     });
 
     it("Should check states for L2 'exit' tx", async () => {
-        // First exit transaction (INSERT leaf signaling by newExit == 0 field)
-
         // Should take fromIdx as key1
         // Should UPDATE on processor 1
         // Should take fromIdx as key2
-        // Should INSERT on processor 2
+        // Should UPDATE on processor 2
 
         const input = {
             fromIdx: 256,
@@ -440,7 +493,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 0,
             auxToIdx: 0,
             amount: 30,
-            newExit: 1,
             loadAmount: 0,
             newAccount: 0,
             onChain: 0,
@@ -454,26 +506,7 @@ describe("Test rollup-tx-states", function () {
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         let output = {
-            key1: input.fromIdx,
-            P1_fnc0: 0,
-            P1_fnc1: 1,
-            key2: input.fromIdx,
-            P2_fnc0: 1,
-            P2_fnc1: 0,
-            isExit: 1,
-            verifySignEnabled: 1,
-            nop: 0,
-            checkToEthAddr: 0,
-            checkToBjj: 0,
-            nullifyLoadAmount: 0,
-            nullifyAmount: 0,
-        };
-        await circuit.assertOut(w, output);
-
-        // Further exit transactions (UPDATE leaf signaling by newExit != 0 field)
-        input.newExit = 0;
-        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
-        output = {
+            isP1Insert: 0,
             key1: input.fromIdx,
             P1_fnc0: 0,
             P1_fnc1: 1,
@@ -504,7 +537,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 0,
             auxToIdx: 257,
             amount: 30,
-            newExit: 0,
             loadAmount: 0,
             newAccount: 0,
             onChain: 0,
@@ -518,6 +550,7 @@ describe("Test rollup-tx-states", function () {
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 0,
             key1: input.fromIdx,
             P1_fnc0: 0,
             P1_fnc1: 1,
@@ -548,7 +581,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 0,
             auxToIdx: 257,
             amount: 30,
-            newExit: 0,
             loadAmount: 0,
             newAccount: 0,
             onChain: 0,
@@ -562,6 +594,7 @@ describe("Test rollup-tx-states", function () {
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 0,
             key1: input.fromIdx,
             P1_fnc0: 0,
             P1_fnc1: 1,
@@ -593,7 +626,6 @@ describe("Test rollup-tx-states", function () {
             auxFromIdx: 0,
             auxToIdx: 0,
             amount: 0,
-            newExit: 0,
             loadAmount: 0,
             newAccount: 0,
             onChain: 0,
@@ -607,6 +639,7 @@ describe("Test rollup-tx-states", function () {
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
         const output = {
+            isP1Insert: 0,
             key1: 0,
             P1_fnc0: 0,
             P1_fnc1: 0,
@@ -622,5 +655,47 @@ describe("Test rollup-tx-states", function () {
             nullifyAmount: 0,
         };
         await circuit.assertOut(w, output);
+    });
+
+    it("Should check error for L2 tx", async () => {
+        // Should take fromIdx as key1
+        // Should UPDATE on processor 1
+        // Should take toIdx as key2
+        // Should UPDATE on processor 2
+
+        const input = {
+            fromIdx: 256,
+            toIdx: 257,
+            toEthAddr: 0,
+            auxFromIdx: 0,
+            auxToIdx: 0,
+            amount: 30,
+            loadAmount: 0,
+            newAccount: 0,
+            onChain: 0,
+            // check onChain params
+            fromEthAddr: 2,
+            ethAddr1: 2,
+            tokenID: 3,
+            tokenID1: 3,
+            tokenID2: 3,
+        };
+
+        // loadAmount must be 0 if L2 Tx
+        input.loadAmount = 1;
+        try {
+            await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        } catch(error){
+            expect(error.message.includes("Constraint doesn't match")).to.be.equal(true);
+        }
+
+        // newAccount must be 0 if L2 Tx
+        input.loadAmount = 0;
+        input.newAccount = 1;
+        try {
+            await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        } catch(error){
+            expect(error.message.includes("Constraint doesn't match")).to.be.equal(true);
+        }
     });
 });

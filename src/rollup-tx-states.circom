@@ -11,7 +11,6 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  * @input auxFromIdx - {Uint48} - auxiliary index to create accounts
  * @input auxToIdx - {Uint48} - auxiliary index when signed index receiver is set to null
  * @input amount - {Uint192} - amount to transfer from L2 to L2
- * @input newExit - {Bool} - determines if the transaction create a new account in the exit tree
  * @input loadAmount - {Uint192} - amount to deposit from L1 to L2
  * @input newAccount - {Bool} - determines if transaction creates a new account
  * @input onChain - {Bool} - determines if the transaction is L1 or L2
@@ -21,7 +20,6 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  * @input tokenID1  - {Uint32} - tokenID of the sender leaf
  * @input tokenID2 - {Uint32} - tokenID of the receiver leaf
  * @output isP1Insert - {Bool} - determines if processor 1 performs an INSERT function (sender)
- * @output isP2Insert - {Bool} - determines if processor 2 performs an INSERT function (receiver)
  * @output key1 - {Uint48} - processor 1 key
  * @output key2 - {Uint48} - processor 2 key
  * @output P1_fnc0 - {Bool} - processor 1 bit 0 functionality
@@ -38,20 +36,20 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  */
 template RollupTxStates() {
     // The following table summarize all the internal states that has to be processed depending on tx type
-    // |    **Transaction type**     |   fromIdx   | auxFromIdx | toIdx |  auxToIdx  |       toEthAddr        | onChain | newAccount | loadAmount | amount |       newExit        | *isP1Insert* |     *isP2Insert*     | *processor 1* |    *processor 2*     | *isExit* | *verifySignEnable* | *nop* | *checkToEthAddr* | *checkToBjj* |
-    // |:---------------------------:|:-----------:|:----------:|:-----:|:----------:|:----------------------:|:-------:|:----------:|:----------:|:------:|:--------------------:|:------------:|:--------------------:|:-------------:|:--------------------:|:--------:|:------------------:|:-----:|:----------------:|:------------:|
-    // |         createAccount       |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     0      |   0    |          0           |       1      |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |    createAccountDeposit     |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     X      |   0    |          0           |       1      |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // | createAccountDepositTranfer |      0      |    key1    | key2  |     0      |           0            |    1    |     1      |     X      |   X    |          0           |       1      |          0           |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |           deposit           |    key1     |     0      |   0   |     0      |           0            |    1    |     0      |     X      |   0    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |       depositTransfer       |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     X      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |        forceTransfer        |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     0      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
-    // |          forceExit          | key1 - key2 |     0      |   1   |     0      |           0            |    1    |     0      |     0      |   X    | 0: UPDATE, 1: INSERT |       0      | X: UPDATE, 0: INSERT |    UPDATE     | EXIT INSERT - UPDATE |    1     |         0          |   0   |        0         |      0       |
-    // |          transfer           |    key1     |     0      | key2  |     0      |           0            |    0    |     0      |     0      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        0         |      0       |
-    // |            exit             | key1 - key2 |     0      |   1   |     0      |           0            |    0    |     0      |     0      |   X    | 0: UPDATE, 1: INSERT |       0      | X: UPDATE, 0: INSERT |    UPDATE     | EXIT INSERT - UPDATE |    1     |         1          |   0   |        0         |      0       |
-    // |      transferToEthAddr      |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR != 0xF..F |    0    |     0      |     0      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      0       |
-    // |        transferToBjj        |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR == 0xF..F |    0    |     0      |     0      |   X    |          0           |       0      |          0           |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      1       |
-    // |             nop             |      0      |     0      |   0   |     0      |           0            |    0    |     0      |     0      |   0    |          0           |       0      |          0           |      NOP      |         NOP          |    0     |         0          |   1   |        0         |      0       |
+    // |    **Transaction type**     |   fromIdx   | auxFromIdx | toIdx |  auxToIdx  |       toEthAddr        | onChain | newAccount | loadAmount | amount | *isP1Insert* | *processor 1* |    *processor 2*     | *isExit* | *verifySignEnable* | *nop* | *checkToEthAddr* | *checkToBjj* |
+    // |:---------------------------:|:-----------:|:----------:|:-----:|:----------:|:----------------------:|:-------:|:----------:|:----------:|:------:|:------------:|:-------------:|:--------------------:|:--------:|:------------------:|:-----:|:----------------:|:------------:|
+    // |         createAccount       |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     0      |   0    |       1      |    INSERT     |         NOP          |    0     |         0          |   0   |        0         |      0       |
+    // |    createAccountDeposit     |      0      |    key1    |   0   |     0      |           0            |    1    |     1      |     X      |   0    |       1      |    INSERT     |         NOP          |    0     |         0          |   0   |        0         |      0       |
+    // | createAccountDepositTranfer |      0      |    key1    | key2  |     0      |           0            |    1    |     1      |     X      |   X    |       1      |    INSERT     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |           deposit           |    key1     |     0      |   0   |     0      |           0            |    1    |     0      |     X      |   0    |       0      |    UPDATE     |         NOP          |    0     |         0          |   0   |        0         |      0       |
+    // |       depositTransfer       |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     X      |   X    |       0      |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |        forceTransfer        |    key1     |     0      | key2  |     0      |           0            |    1    |     0      |     0      |   X    |       0      |    UPDATE     |        UPDATE        |    0     |         0          |   0   |        0         |      0       |
+    // |          forceExit          | key1 - key2 |     0      |   1   |     0      |           0            |    1    |     0      |     0      |   X    |       0      |    UPDATE     |        UPDATE        |    1     |         0          |   0   |        0         |      0       |
+    // |          transfer           |    key1     |     0      | key2  |     0      |           0            |    0    |     0      |     0      |   X    |       0      |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        0         |      0       |
+    // |            exit             | key1 - key2 |     0      |   1   |     0      |           0            |    0    |     0      |     0      |   X    |       0      |    UPDATE     |        UPDATE        |    1     |         1          |   0   |        0         |      0       |
+    // |      transferToEthAddr      |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR != 0xF..F |    0    |     0      |     0      |   X    |       0      |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      0       |
+    // |        transferToBjj        |    key1     |     0      |   0   |    key2    | ANY_ETH_ADDR == 0xF..F |    0    |     0      |     0      |   X    |       0      |    UPDATE     |        UPDATE        |    0     |         1          |   0   |        1         |      1       |
+    // |             nop             |      0      |     0      |   0   |     0      |           0            |    0    |     0      |     0      |   0    |       0      |      NOP      |         NOP          |    0     |         0          |   1   |        0         |      0       |
 
     signal input fromIdx;
     signal input toIdx;
@@ -60,7 +58,6 @@ template RollupTxStates() {
     signal input auxToIdx;
 
     signal input amount;
-    signal input newExit;
     signal input loadAmount;
     signal input newAccount;
     signal input onChain;
@@ -73,7 +70,6 @@ template RollupTxStates() {
     signal input tokenID2;
 
     signal output isP1Insert;
-    signal output isP2Insert;
     signal output key1;
     signal output key2;
     signal output P1_fnc0;
@@ -106,7 +102,7 @@ template RollupTxStates() {
     ////////
     // if user signs 'toIdx == 0', then idx receiver would be freely chosen
     // by the coordinator and it is set on 'auxToIdx'
-    // note that this might happen in 'transferToEthAddr' and 'transferToBjj' transaction types
+    // note that this might happen in L2 'transferToEthAddr' and 'transferToBjj' transaction types
 
     signal finalToIdx;
 
@@ -146,13 +142,23 @@ template RollupTxStates() {
 
     isExit <== checkIsExit.out;
 
-    // finalFromIdx == 0 --> NOP processor 1
+    // finalFromIdx == 0 --> NOP transaction
     ////////
-    // if the tx has no account index assigned, the tx would be considered as NULL
+    // if the tx has no account index assigned, the tx would be considered as NOP
     component finalFromIdxIsZero = IsZero();
     finalFromIdxIsZero.in <== finalFromIdx;
     signal isFinalFromIdx;
     isFinalFromIdx <== 1 - finalFromIdxIsZero.out;
+
+    // nop signaling for processor2
+    ////////
+    nop <== finalFromIdxIsZero.out;
+
+    // finalToIdx == 0
+    ////////
+    // if the tx has no index received assigned in L1 transactions --> NOP processor 2
+    component finalToIdxIsZero = IsZero();
+    finalToIdxIsZero.in <== finalToIdx;
 
     // Check if loadAmount != 0
     ////////
@@ -201,18 +207,22 @@ template RollupTxStates() {
 
     // select processor 2 function and key2
     ////////
-    isP2Insert <== isExit*newExit; // processor 2 performs an INSERT
+    // processor 2 performs NOP either:
+    // - finalFromIdx == 0
+    // - L1 transaction and finalToIdx == 0
+    signal isL1FinalToIdxIsZero;
+    isL1FinalToIdxIsZero <== onChain*finalToIdxIsZero.out;
 
-    P2_fnc0 <== isP2Insert*isFinalFromIdx; // processor 2 performs NOP if fromIdx == 0
-    P2_fnc1 <== (1-isP2Insert)*isFinalFromIdx;
+    P2_fnc0 <== 0;
+    P2_fnc1 <== (1 - nop) * (1 - isL1FinalToIdxIsZero);
 
     component mux2 = Mux2();
     mux2.c[0] <== 0;
     mux2.c[1] <== finalToIdx;
-    mux2.c[2] <== 0;
+    mux2.c[2] <== finalFromIdx;
     mux2.c[3] <== finalFromIdx;
-    mux2.s[0] <== isAmount;
-    mux2.s[1] <== isExit;
+    mux2.s[0] <== P2_fnc1;
+    mux2.s[1] <== isExit*P2_fnc1;
 
     mux2.out ==> key2;
 
@@ -220,10 +230,6 @@ template RollupTxStates() {
     ////////
     // L2 signature is only checkd if the tx is L2 and the sender account is not NULL
      verifySignEnabled <== (1-onChain)*isFinalFromIdx;
-
-    // nop signaling for 'balance-updater' circuit
-    ////////
-    nop <== finalFromIdxIsZero.out;
 
     // signals to check receiver in tx type 'transfertoEthAddr' or 'transferToBjj'
     ////////
@@ -255,7 +261,7 @@ template RollupTxStates() {
     // |           deposit            |     0      |      1       |    0     |      0       |       1       |        0         |          1          |        0        |
     // |       depositTransfer        |     0      |      1       |    1     |      1       |       1       |        1         |          1          |        1        |
     // |        forceTransfer         |     0      |      0       |    1     |      1       |       1       |        1         |          0          |        1        |
-    // |          forceExit           |     0      |      0       |    1     |      1       |       1       | 1 if newExit = 0 |          0          |        1        |
+    // |          forceExit           |     0      |      0       |    1     |      1       |       1       |        1         |          0          |        1        |
 
     signal onChainNotCreateAccount;
     onChainNotCreateAccount <== (1 - newAccount)*onChain; // tx is L1 and does not create an account
@@ -290,14 +296,11 @@ template RollupTxStates() {
     signal shouldCheckTokenID2_0;
     shouldCheckTokenID2_0 <== onChain*isAmount;
 
-    signal shouldCheckTokenID2_1;
-    shouldCheckTokenID2_1 <== shouldCheckTokenID2_0 * (1 - isP2Insert);
-
     component checkTokenID2 = IsEqual();
     checkTokenID2.in[0] <== tokenID;
     checkTokenID2.in[1] <== tokenID2;
 
-    applyNullifierTokenID2 <== shouldCheckTokenID2_1 * (1 - checkTokenID2.out);
+    applyNullifierTokenID2 <== shouldCheckTokenID2_0 * (1 - checkTokenID2.out);
 
     // nullify loadAmount
     nullifyLoadAmount <== applyNullifierTokenID1 * isLoadAmount;

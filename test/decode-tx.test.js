@@ -268,7 +268,7 @@ describe("Test Decode Tx", function () {
         await circuit.assertOut(w, checkOut);
     });
 
-    it("Should check L1L2TxData", async () => {
+    it("Should check L1L2TxData & L1L2TxDataNum", async () => {
 
         const indexBits = (NLEVELS/8) * 8;
         const amountBits = 40;
@@ -315,12 +315,13 @@ describe("Test Decode Tx", function () {
         let tmp = txUtils.encodeL2Tx(tx, NLEVELS);
         let res = Scalar.fromString(tmp, 16);
         let resBits = Scalar.bits(res).reverse();
-        while(resBits.length < totalBits){
+        while (resBits.length < totalBits){
             resBits.unshift(0);
         }
 
         let checkOut = {
             L1L2TxData: resBits,
+            L1L2TxDataNum: res
         };
 
         await circuit.assertOut(w, checkOut);
@@ -336,12 +337,13 @@ describe("Test Decode Tx", function () {
         tmp = txUtils.encodeL2Tx(tx, NLEVELS);
         res = Scalar.fromString(tmp, 16);
         resBits = Scalar.bits(res).reverse();
-        while(resBits.length < totalBits){
+        while (resBits.length < totalBits){
             resBits.unshift(0);
         }
 
         checkOut = {
             L1L2TxData: resBits,
+            L1L2TxDataNum: res
         };
 
         await circuit.assertOut(w, checkOut);
@@ -355,12 +357,13 @@ describe("Test Decode Tx", function () {
         const tmpL1 = txUtils.encodeL1Tx(tx, NLEVELS);
         const resL1 = Scalar.fromString(tmpL1, 16);
         let resL1Bits = Scalar.bits(resL1).reverse();
-        while(resL1Bits.length < totalBits){
+        while (resL1Bits.length < totalBits){
             resL1Bits.unshift(0);
         }
 
         checkOut = {
             L1L2TxData: resL1Bits,
+            L1L2TxDataNum: resL1
         };
 
         await circuit.assertOut(w, checkOut);

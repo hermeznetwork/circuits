@@ -6,35 +6,39 @@ include "./compute-fee.circom";
 /**
  * Compute new balances from sender and receiver
  * Checks if there is enough balance in the sender account to do the transfer to the receiver account
- * @input oldStBalanceSender - {Field} - initial sender balance
- * @input oldStBalanceReceiver - {Field} - initial receiver balance
+ * @input oldBalanceSender - {Field} - initial sender balance
+ * @input oldBalanceReceiver - {Field} - initial receiver balance
+ * @input oldExitBalanceReceiver - {Field} - initial receiver exit balance
  * @input amount - {Uint192} - amount to transfer from L2 to L2
  * @input loadAmount - {Uint192} - amount to deposit from L1 to L2
  * @input feeSelector - {Uint8} - user selector fee
  * @input onChain - {Bool} - determines if the transaction is L1 or L2
- * @input nop- {Bool} - determines if the transfer amount and fees are considered 0
+ * @input nop - {Bool} - determines if the transfer amount and fees are considered 0
+ * @input isExit - {Bool} - determines if the transaction is an exit
  * @input nullifyLoadAmount - {Bool} - determines if loadAmount is considered to be 0
  * @input nullifyAmount - {Bool} - determines if amount is considered to be 0
- * @output newStBalanceSender - {Uint192} - final balance sender
- * @output newStBalanceReceiver - {Uint192} - final balance receiver
- * @output isP2Nop - {Bool} - determines if processor 2 performs a NOP function
+ * @output newBalanceSender - {Uint192} - final balance sender
+ * @output newBalanceReceiver - {Uint192} - final balance receiver
+ * @output newExitBalanceReceiver - {Uint192} - final exit balance receiver
  * @output fee2Charge - {Uint192} - effective transaction fee
  * @output isAmountNullified - {Bool} - determines if the amount is nullified
  */
 template BalanceUpdater() {
-    signal input oldStBalanceSender;
-    signal input oldStBalanceReceiver;
+    signal input oldBalanceSender;
+    signal input oldBalanceReceiver;
+    signal input oldExitBalanceReceiver;
     signal input amount;
     signal input loadAmount;
     signal input feeSelector;
     signal input onChain;
     signal input nop;
+    signal input isExit;
     signal input nullifyLoadAmount;
     signal input nullifyAmount;
 
-    signal output newStBalanceSender;
-    signal output newStBalanceReceiver;
-    signal output isP2Nop;
+    signal output newBalanceSender;
+    signal output newBalanceReceiver;
+    signal output newExitBalanceReceiver;
     signal output fee2Charge;
     signal output isAmountNullified;
 
@@ -75,7 +79,7 @@ template BalanceUpdater() {
     // - if account has not enough balance, bit 193 will be 0
 
     component n2bSender = Num2Bits(193);
-    n2bSender.in <== (1<<192) + oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount2 - fee2Charge;
+    n2bSender.in <== (1<<192) + oldBalanceSender + effectiveLoadAmount2 - effectiveAmount2 - fee2Charge;
 
     underflowOk <== n2bSender.out[192];
 
@@ -87,8 +91,10 @@ template BalanceUpdater() {
 
     // compute new balances for sender and receiver
     ////////
-    newStBalanceSender <== oldStBalanceSender + effectiveLoadAmount2 - effectiveAmount3 - fee2Charge;
-    newStBalanceReceiver <== oldStBalanceReceiver + effectiveAmount3;
+    newBalanceSender <== oldBalanceSender + effectiveLoadAmount2 - effectiveAmount3 - fee2Charge;
+
+    newBalanceReceiver <== oldBalanceReceiver + effectiveAmount3*(1 - isExit);
+    newExitBalanceReceiver <== oldExitBalanceReceiver + effectiveAmount3*isExit;
 
     // check if original amount to process is 0
     component effectiveAmountIsZero = IsZero();
@@ -98,11 +104,6 @@ template BalanceUpdater() {
     // this signal is used in L1 invalid transactions where the amount used would not be inserted in txsData since L1Tx is not valid or
     // triggers underflow
     isAmountNullified <== 1 - (1 - nullifyAmount)*underflowOk;
-
-    // Set NOP fucntion on processor 2 (receiver account) if original amount to transfer is 0 since
-    // receiver account does not change and coordinator does not need to provide
-    // information to proof leaf existence
-    isP2Nop <== (1 - effectiveAmountIsZero.out);
 
     // Note that amount to transfer could be 0 due that the transaction has been nullified.
     // In this case, coordinator must provide account data to be processed by the processor 2 (receiver processor)

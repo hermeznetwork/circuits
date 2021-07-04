@@ -47,6 +47,12 @@ function getSingleTxInput(bb, numTx, tx, nTokens){
 
     const decodeTxCompressedData = txUtils.decodeTxCompressedData(finalInput.txCompressedData[numTx]);
 
+    let buildL1L2TxDataNum = 0;
+    if (tx){
+        const L1L2TxDataHex = tx.onChain ? txUtils.encodeL1Tx(tx, bb.nLevels) : txUtils.encodeL2Tx(tx, bb.nLevels);
+        buildL1L2TxDataNum = Scalar.fromString(L1L2TxDataHex, 16);
+    }
+
     const input = {
         // accmulate fees
         feePlanTokens: finalInput.feePlanTokens,
@@ -82,6 +88,7 @@ function getSingleTxInput(bb, numTx, tx, nTokens){
         rqToEthAddr: finalInput.rqToEthAddr[numTx],
         rqToBjjAy: finalInput.rqToBjjAy[numTx],
 
+        L1L2TxDataNum: buildL1L2TxDataNum,
         sigL2Hash: tx ? txUtils.buildHashSig(tx) : 0,
         s: finalInput.s[numTx],
         r8x: finalInput.r8x[numTx],
@@ -93,12 +100,14 @@ function getSingleTxInput(bb, numTx, tx, nTokens){
         loadAmountF: finalInput.loadAmountF[numTx],
 
         // State 1
-        sign1: finalInput.sign1[numTx],
-        ay1: finalInput.ay1[numTx],
-        balance1: finalInput.balance1[numTx],
-        nonce1: finalInput.nonce1[numTx],
         tokenID1: finalInput.tokenID1[numTx],
+        nonce1: finalInput.nonce1[numTx],
+        sign1: finalInput.sign1[numTx],
+        balance1: finalInput.balance1[numTx],
+        ay1: finalInput.ay1[numTx],
         ethAddr1: finalInput.ethAddr1[numTx],
+        exitBalance1: finalInput.exitBalance1[numTx],
+        accumulatedHash1: finalInput.accumulatedHash1[numTx],
         siblings1: finalInput.siblings1[numTx],
 
         // Required for inserts and delete
@@ -107,31 +116,24 @@ function getSingleTxInput(bb, numTx, tx, nTokens){
         oldValue1: finalInput.oldValue1[numTx],
 
         // State 2
-        sign2: finalInput.sign2[numTx],
-        ay2: finalInput.ay2[numTx],
-        balance2: finalInput.balance2[numTx],
-        newExit: finalInput.newExit[numTx],
-        nonce2: finalInput.nonce2[numTx],
         tokenID2: finalInput.tokenID2[numTx],
+        nonce2: finalInput.nonce2[numTx],
+        sign2: finalInput.sign2[numTx],
+        balance2: finalInput.balance2[numTx],
+        ay2: finalInput.ay2[numTx],
         ethAddr2: finalInput.ethAddr2[numTx],
+        exitBalance2: finalInput.exitBalance2[numTx],
+        accumulatedHash2: finalInput.accumulatedHash2[numTx],
         siblings2: finalInput.siblings2[numTx],
-        // Required for inserts and delete
-        isOld0_2: finalInput.isOld0_2[numTx],
-        oldKey2: finalInput.oldKey2[numTx],
-        oldValue2: finalInput.oldValue2[numTx],
 
         // Roots
-        oldStateRoot: finalInput.imStateRoot[numTx-1] || finalInput.oldStateRoot,
-        oldExitRoot: finalInput.imExitRoot[numTx-1] || 0,
+        oldStateRoot: finalInput.imStateRoot[numTx-1] || finalInput.oldStateRoot
     };
 
     const output = {
         accFeeOut: accumulateFees(input, nTokens),
         newStateRoot: (finalInput.imStateRoot[numTx] === undefined) ? bb.getNewStateRoot() :
             finalInput.imStateRoot[numTx],
-        newExitRoot: (finalInput.imExitRoot[numTx] === undefined) ? bb.getNewExitRoot() :
-            finalInput.imExitRoot[numTx],
-        isAmountNullified: tx.isAmountNullified ? 1 : 0,
     };
     return {input, output};
 }
@@ -140,6 +142,7 @@ async function assertTxs(bb, circuit){
     for (let i = 0; i < bb.maxNTx ; i++){
         let res = getSingleTxInput(bb, i, bb.txs[i], bb.totalFeeTransactions);
         let w = await circuit.calculateWitness(res.input, {logTrigger:false, logOutput: false, logSet: false});
+
         await circuit.assertOut(w, res.output);
     }
 }

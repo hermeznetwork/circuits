@@ -29,6 +29,7 @@ include "./lib/decode-float.circom";
  * @input auxToIdx - {Uint48} - auxiliary index when signed index receiver is set to null
  * @input inIdx  - {Uint48} - old last index assigned
  * @output L1L2TxData[nLevels*2 + 40 + 8] - {Array[Bool]} - L1-L2 data availability
+ * @output L1L2TxDataNum - {Field} - L1-L2 data availability integer
  * @output txCompressedDataV2 - {Uint193} - encode transaction fields together version 2
  * @output L1TxFullData - {Array[Bool]} - L1 full data
  * @output outIdx - {Uint48} - new last index assigned
@@ -54,7 +55,8 @@ template DecodeTx(nLevels) {
     signal input rqToBjjAy;
 
     // fromIdx | toIdx | amountF | userFee
-    signal output L1L2TxData[nLevels*2 + 40 + 8];
+    signal output L1L2TxData[2*nLevels + 40 + 8];
+    signal output L1L2TxDataNum;
     signal output txCompressedDataV2;
 
     // tx L1 fields
@@ -217,7 +219,7 @@ template DecodeTx(nLevels) {
     // if user signs 'toIdx == 0', then idx receiver would be freely chosen
     // by the coordinator and it is set on 'auxToIdx'.
     // 'auxToIdx' would be the receiver and it would be added to data availability
-    // ineatd of `toIdx`
+    // instead of `toIdx`
     component toIdxIsZero = IsZero();
     toIdxIsZero.in <== toIdx;
 
@@ -245,6 +247,16 @@ template DecodeTx(nLevels) {
     for (i = 0; i < 8; i++) {
         L1L2TxData[nLevels*2 + 40 + 8 - 1 - i] <== n2bData.out[216 + i]*(1-onChain);
     }
+
+    var bitsL1L2TxsData = 2*nLevels + 40 + 8;
+
+    component b2nL1L2TxsData = Bits2Num(2*nLevels + 40 + 8);
+
+    for (i = 0; i < bitsL1L2TxsData; i++) {
+        b2nL1L2TxsData.in[i] <== L1L2TxData[bitsL1L2TxsData - i - 1];
+    }
+
+    b2nL1L2TxsData.out ==> L1L2TxDataNum;
 
     // Build sigL2Hash
     ////////
