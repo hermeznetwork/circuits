@@ -8,11 +8,14 @@ include "./lib/hash-state.circom"
 /**
  * Verify withdrawal by proving that a leaf exist on the exit tree
  * @param nLevels - merkle tree depth
- * @input root exit - {Field} - exit tree root
+ * @input rootState - {Field} - state tree root
  * @input ethAddr - {Uint160} - ethereum address
  * @input tokenID - {Uint32} - token identifier
+ * @input nonce - {Uint40} - nonce
  * @input balance - {Uint192} - balance
  * @input idx - {Uint48} - merkle tree index
+ * @input exitBalance - {Uint192} - exitBalance
+ * @input accumulatedHash - {Field} - accumulatedHash
  * @input sign - {Bool} - babyjubjub sign
  * @input ay - {Field} babyjubjub y coordinate
  * @input siblingsState[nLevels + 1] - {Array(Field)} - siblings merkle proof
@@ -23,11 +26,14 @@ template Withdraw(nLevels) {
     signal output hashGlobalInputs;
 
     // private inputs
-    signal private input rootExit;
+    signal private input rootState;
 	signal private input ethAddr;
     signal private input tokenID;
+    signal private input nonce;
     signal private input balance;
     signal private input idx;
+    signal private input exitBalance;
+    signal private input accumulatedHash;
     signal private input sign;
     signal private input ay;
     signal private input siblingsState[nLevels + 1];
@@ -36,18 +42,20 @@ template Withdraw(nLevels) {
     ////////
     component accountState = HashState();
     accountState.tokenID <== tokenID;
-    accountState.nonce <== 0;
+    accountState.nonce <== nonce;
     accountState.sign <== sign;
     accountState.balance <== balance;
     accountState.ay <== ay;
     accountState.ethAddr <== ethAddr;
+    accountState.exitBalance <== exitBalance;
+    accountState.accumulatedHash <== accumulatedHash;
 
-    // verify account state is on exit tree root
+    // verify account state is on state tree root
     ////////
 	component smtVerify = SMTVerifier(nLevels + 1);
 	smtVerify.enabled <== 1;
 	smtVerify.fnc <== 0;
-	smtVerify.root <== rootExit;
+	smtVerify.root <== rootState;
 	for (var i = 0; i < nLevels + 1; i++) {
 		smtVerify.siblings[i] <== siblingsState[i];
 	}
@@ -61,10 +69,10 @@ template Withdraw(nLevels) {
     ////////
     component hasherInputs = HashInputsWithdrawal(nLevels);
 
-    hasherInputs.rootExit <== rootExit;
+    hasherInputs.rootState <== rootState;
     hasherInputs.ethAddr <== ethAddr;
     hasherInputs.tokenID <== tokenID;
-    hasherInputs.balance <== balance;
+    hasherInputs.exitBalance <== exitBalance;
     hasherInputs.idx <== idx;
 
     // set public output
@@ -74,26 +82,26 @@ template Withdraw(nLevels) {
 /**
  * Computes the sha256 hash of all pretended public inputs
  * @param nLevels - merkle tree depth
- * @input rootExit - {Field} - exit root
+ * @input rootState - {Field} - state root
  * @input ethAddr - {Uint160} - ethereum address
  * @input tokenID - {Uint32} - token identifier
- * @input balance - {Uint192} - balance
+ * @input exitBalance - {Uint192} - exit balance
  * @input idx - {Uint48} - merkle tree index
  * @output hashInputsOut - {Field} - hash inputs signals
  */
 template HashInputsWithdrawal(nLevels){
     // bits for each public input type
-    var bitsRootExit = 256;
+    var bitsRootState = 256;
     var bitsEthAddr = 160;
     var bitsTokenID = 32;
-    var bitsBalance = 192;
+    var bitsExitBalance = 192;
     var bitsIdx = 48; // MAX_NLEVELS
 
     // inputs
-    signal input rootExit;
+    signal input rootState;
     signal input ethAddr;
     signal input tokenID;
-    signal input balance;
+    signal input exitBalance;
     signal input idx;
 
     // output
@@ -104,9 +112,9 @@ template HashInputsWithdrawal(nLevels){
 
     // get bits from all inputs
     ////////
-    // rootExit
-    component n2bRootExit = Num2Bits(256);
-    n2bRootExit.in <== rootExit;
+    // rootState
+    component n2bRootState = Num2Bits(256);
+    n2bRootState.in <== rootState;
 
     // ethAddr
     component n2bEthAddr = Num2Bits(160);
@@ -116,9 +124,9 @@ template HashInputsWithdrawal(nLevels){
     component n2bTokenID = Num2Bits(32);
     n2bTokenID.in <== tokenID;
 
-    // balance
-    component n2bBalance = Num2Bits(192);
-    n2bBalance.in <== balance;
+    // exitBalance
+    component n2bExitBalance = Num2Bits(192);
+    n2bExitBalance.in <== exitBalance;
 
     // idx
     component n2bIdx = Num2Bits(48);
@@ -131,16 +139,16 @@ template HashInputsWithdrawal(nLevels){
 
     // build SHA256 with all inputs
     ////////
-    var totalBitsSha256 = bitsRootExit + bitsEthAddr + bitsTokenID + bitsBalance +  bitsIdx;
+    var totalBitsSha256 = bitsRootState + bitsEthAddr + bitsTokenID + bitsExitBalance +  bitsIdx;
     component inputsHasher = Sha256(totalBitsSha256);
 
     var offset = 0;
 
-    // add rootExit
-    for (i = 0; i < bitsRootExit; i++) {
-        inputsHasher.in[bitsRootExit - 1 - i] <== n2bRootExit.out[i];
+    // add rootState
+    for (i = 0; i < bitsRootState; i++) {
+        inputsHasher.in[bitsRootState - 1 - i] <== n2bRootState.out[i];
     }
-    offset = offset + bitsRootExit;
+    offset = offset + bitsRootState;
 
     // add ethAddr
     for (i = 0; i < bitsEthAddr; i++) {
@@ -154,11 +162,11 @@ template HashInputsWithdrawal(nLevels){
     }
     offset = offset + bitsTokenID;
 
-    // add balance
-    for (i = 0; i < bitsBalance; i++) {
-        inputsHasher.in[offset + bitsBalance - 1 - i] <== n2bBalance.out[i];
+    // add exitBalance
+    for (i = 0; i < bitsExitBalance; i++) {
+        inputsHasher.in[offset + bitsExitBalance - 1 - i] <== n2bExitBalance.out[i];
     }
-    offset = offset + bitsBalance;
+    offset = offset + bitsExitBalance;
 
     // add idx
     for (i = 0; i < bitsIdx; i++) {

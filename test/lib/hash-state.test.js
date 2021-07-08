@@ -35,6 +35,8 @@ describe("Test hash-state", function () {
             sign: 1,
             ay: "144e7e10fd47e0c67a733643b760e80ed399f70e78ae97620dbb719579cd645d",
             ethAddr: "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+            exitBalance: Scalar.e(78910),
+            accumulatedHash: Scalar.e(11121314)
         };
 
         const hashJs = stateUtils.hashState(state);
@@ -46,6 +48,8 @@ describe("Test hash-state", function () {
             sign: Scalar.e(state.tokenID),
             ay: Scalar.fromString(state.ay, 16),
             ethAddr: Scalar.fromString(state.ethAddr, 16),
+            exitBalance: Scalar.e(state.exitBalance),
+            accumulatedHash: Scalar.e(state.accumulatedHash)
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
