@@ -105,13 +105,13 @@ describe("Test withdraw", function () {
         bb2.addTx(tx3);
 
         await bb2.build();
-        const rootExitBb2 = bb2.getNewExitRoot();
+        const rootStateBb2 = bb2.getNewStateRoot();
         await rollupDB.consolidate(bb2);
 
-        const exitInfo1 = await rollupDB.getExitTreeInfo(256, 2);
-        const exitInfo2 = await rollupDB.getExitTreeInfo(257, 2);
-        const exitInfo3 = await rollupDB.getExitTreeInfo(258, 2);
-        const exitInfo4 = await rollupDB.getExitTreeInfo(259, 2);
+        const exitInfo1 = await rollupDB.getExitInfo(256, 2);
+        const exitInfo2 = await rollupDB.getExitInfo(257, 2);
+        const exitInfo3 = await rollupDB.getExitInfo(258, 2);
+        const exitInfo4 = await rollupDB.getExitInfo(259, 2);
 
         const exitInfo = [];
         exitInfo.push(exitInfo1);
@@ -132,11 +132,14 @@ describe("Test withdraw", function () {
             const tmpState = tmpExitInfo.state;
 
             // fill private inputs
-            tmpInput.rootExit = rootExitBb2;
+            tmpInput.rootState = rootStateBb2;
             tmpInput.ethAddr = Scalar.fromString(tmpState.ethAddr, 16);
             tmpInput.tokenID = tmpState.tokenID;
+            tmpInput.nonce = tmpState.nonce;
             tmpInput.balance = tmpState.balance;
             tmpInput.idx = tmpState.idx;
+            tmpInput.exitBalance = tmpState.exitBalance;
+            tmpInput.accumulatedHash = tmpState.accumulatedHash;
             tmpInput.sign = tmpState.sign;
             tmpInput.ay = Scalar.fromString(tmpState.ay, 16);
 
