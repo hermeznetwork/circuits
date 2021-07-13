@@ -298,7 +298,7 @@ template RollupTx(nLevels, maxFeeTx) {
 
     // E - signal processor selectors
     ////////
-    // decode BjjCompumulatedressed
+    // decode BjjCompressed
     component decodeFromBjj = BitsCompressed2AySign();
     for (i = 0; i < 256; i++){
         decodeFromBjj.bjjCompressed[i] <== fromBjjCompressed[i];

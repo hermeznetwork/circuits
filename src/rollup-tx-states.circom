@@ -190,10 +190,24 @@ template RollupTxStates() {
 
     // select processor 1 function and key1
     ////////
+    // processor1 could perform NOP, UPDATE and INSERT
     isP1Insert <== onChain*newAccount; // processor 1 performs an INSERT
 
     P1_fnc0 <== isP1Insert*isFinalFromIdx; // processor 1 performs NOP if finalFromIdx == 0
     P1_fnc1 <== (1-isP1Insert)*isFinalFromIdx;
+
+    // processor1 key selector:
+    // - processor1 is NOP --> 0
+    // - processor1 is INSERT--> fromIdx
+    // - processor1 is UPDATE --> fromIdx
+
+    // Table key1 selector:
+    // | P1_fnc1 | P1_fnc0 |     key1     |
+    // |:-------:|:-------:|:------------:|
+    // |    0    |    0    |      0       |
+    // |    0    |    1    | finalFromIdx |
+    // |    1    |    0    | finalFromIdx |
+    // |    1    |    1    | finalFromIdx |
 
     component mux1 = Mux2();
     mux1.c[0] <== 0;
@@ -207,14 +221,29 @@ template RollupTxStates() {
 
     // select processor 2 function and key2
     ////////
-    // processor 2 performs NOP either:
+    // processor2 could perform NOP and UPDATE
+    // processor2 performs NOP either:
     // - finalFromIdx == 0
     // - L1 transaction and finalToIdx == 0
+
     signal isL1FinalToIdxIsZero;
     isL1FinalToIdxIsZero <== onChain*finalToIdxIsZero.out;
 
     P2_fnc0 <== 0;
     P2_fnc1 <== (1 - nop) * (1 - isL1FinalToIdxIsZero);
+
+    // processor2 key selector:
+    // - processor2 is NOP --> 0
+    // - processor2 is UPDATE & tx type exit --> fromIdx
+    // - processor2 is UPDATE --> toIdx
+
+    // Table key2 selector:
+    // | isExit*P2_fnc1 | P2_fnc1 |     key2     |
+    // |:--------------:|:-------:|:------------:|
+    // |       0        |    0    |       0      |
+    // |       0        |    1    |  finalToIdx  |
+    // |       1        |    0    |       X      |
+    // |       1        |    1    | finalFromIdx |
 
     component mux2 = Mux2();
     mux2.c[0] <== 0;
