@@ -20,6 +20,8 @@ include "./lib/hash-state.circom";
  * @input balance - {Uint192} - balance of leaf feeIdx
  * @input ay - {Field} - ay of leaf feeIdx
  * @input ethAddr - {Uint160} - ethAddr of leaf feeIdx
+ * @input exitBalance - {Uint192} - account exit balance
+ * @input accumulatedHash - {Field} - received transactions hash chain
  * @input siblings[nLevels + 1]- {Array[Field]} - siblings merkle proof
  * @output newStateRoot - {Field} - new state root
  */
@@ -37,6 +39,8 @@ template FeeTx(nLevels){
     signal input balance;
     signal input ay;
     signal input ethAddr;
+    signal input exitBalance;
+    signal input accumulatedHash;
     signal input siblings[nLevels+1];
 
     signal output newStateRoot;
@@ -81,6 +85,8 @@ template FeeTx(nLevels){
     oldStFeePck.balance <== balance;
     oldStFeePck.ay <== ay;
     oldStFeePck.ethAddr <== ethAddr;
+    oldStFeePck.exitBalance <== exitBalance;
+    oldStFeePck.accumulatedHash <== accumulatedHash;
 
     // new state packer
     ////////
@@ -91,6 +97,8 @@ template FeeTx(nLevels){
     newStFeePck.balance <== accFee + balance; // old balance + fee accumulated
     newStFeePck.ay <== ay;
     newStFeePck.ethAddr <== ethAddr;
+    newStFeePck.exitBalance <== exitBalance;
+    newStFeePck.accumulatedHash <== accumulatedHash;
 
     // smt processor
     ////////

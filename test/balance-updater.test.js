@@ -30,26 +30,28 @@ describe("Test balance-updater", function () {
 
     it("Should check a standard L2 transaction", async () => {
         const input = {
-            oldStBalanceSender: 100,
-            oldStBalanceReceiver: 200,
+            oldBalanceSender: 100,
+            oldBalanceReceiver: 200,
+            oldExitBalanceReceiver: 100,
             amount: 50,
             loadAmount: 0,
             feeSelector: 126,
             onChain: 0,
             nop: 0,
+            isExit: 0,
             nullifyLoadAmount: 0,
             nullifyAmount: 0,
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
 
-        let feeApplied = computeFee(input.amount, input.feeSelector);
+        const feeApplied = computeFee(input.amount, input.feeSelector);
 
         const output = {
-            newStBalanceSender: Scalar.sub(Scalar.sub(input.oldStBalanceSender, input.amount), feeApplied ),
-            newStBalanceReceiver: Scalar.add(input.oldStBalanceReceiver, input.amount),
+            newBalanceSender: Scalar.sub(Scalar.sub(input.oldBalanceSender, input.amount), feeApplied),
+            newBalanceReceiver: Scalar.add(input.oldBalanceReceiver, input.amount),
+            newExitBalanceReceiver: Scalar.e(input.oldExitBalanceReceiver),
             fee2Charge: feeApplied,
-            isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
             isAmountNullified: 0,
         };
 
@@ -58,13 +60,15 @@ describe("Test balance-updater", function () {
 
     it("Should check a standard L1 transaction", async () => {
         const input = {
-            oldStBalanceSender: 100,
-            oldStBalanceReceiver: 200,
+            oldBalanceSender: 100,
+            oldBalanceReceiver: 200,
+            oldExitBalanceReceiver: 100,
             amount: 0,
             loadAmount: 50,
             feeSelector: 200,
             onChain: 1,
             nop: 0,
+            isExit: 0,
             nullifyLoadAmount: 0,
             nullifyAmount: 0,
         };
@@ -74,10 +78,70 @@ describe("Test balance-updater", function () {
         const feeApplied = Scalar.e(0);
 
         const output = {
-            newStBalanceSender: Scalar.add(input.oldStBalanceSender, input.loadAmount),
-            newStBalanceReceiver: Scalar.e(input.oldStBalanceReceiver),
+            newBalanceSender: Scalar.add(input.oldBalanceSender, input.loadAmount),
+            newBalanceReceiver: Scalar.e(input.oldBalanceReceiver),
+            newExitBalanceReceiver: Scalar.e(input.oldExitBalanceReceiver),
             fee2Charge: feeApplied,
-            isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
+            isAmountNullified: 0,
+        };
+
+        await circuit.assertOut(w, output);
+    });
+
+    it("Should check an exit L1 transaction", async () => {
+        const input = {
+            oldBalanceSender: 100,
+            oldBalanceReceiver: 200,
+            oldExitBalanceReceiver: 100,
+            amount: 10,
+            loadAmount: 50,
+            feeSelector: 200,
+            onChain: 1,
+            nop: 0,
+            isExit: 1,
+            nullifyLoadAmount: 0,
+            nullifyAmount: 0,
+        };
+
+        const w = await circuit.calculateWitness(input, {logOutput: false});
+
+        const feeApplied = Scalar.e(0);
+
+        const output = {
+            newBalanceSender: Scalar.sub(Scalar.add(input.oldBalanceSender, input.loadAmount), input.amount),
+            newBalanceReceiver: Scalar.e(input.oldBalanceReceiver),
+            newExitBalanceReceiver: Scalar.add(input.oldExitBalanceReceiver, input.amount),
+            fee2Charge: feeApplied,
+            isAmountNullified: 0,
+        };
+
+        await circuit.assertOut(w, output);
+    });
+
+    it("Should check an exit L2 transaction", async () => {
+        const input = {
+            oldBalanceSender: 100,
+            oldBalanceReceiver: 200,
+            oldExitBalanceReceiver: 50,
+            amount: 60,
+            loadAmount: 0,
+            feeSelector: 126,
+            onChain: 0,
+            nop: 0,
+            isExit: 1,
+            nullifyLoadAmount: 0,
+            nullifyAmount: 0,
+        };
+
+        const w = await circuit.calculateWitness(input, {logOutput: false});
+
+        const feeApplied = computeFee(input.amount, input.feeSelector);
+
+        const output = {
+            newBalanceSender: Scalar.sub(Scalar.sub(input.oldBalanceSender, input.amount), feeApplied),
+            newBalanceReceiver: Scalar.e(input.oldBalanceReceiver),
+            newExitBalanceReceiver: Scalar.add(input.oldExitBalanceReceiver, input.amount),
+            fee2Charge: feeApplied,
             isAmountNullified: 0,
         };
 
@@ -86,13 +150,15 @@ describe("Test balance-updater", function () {
 
     it("Should check nullify load amount L1 transaction", async () => {
         const input = {
-            oldStBalanceSender: 100,
-            oldStBalanceReceiver: 200,
+            oldBalanceSender: 100,
+            oldBalanceReceiver: 200,
+            oldExitBalanceReceiver: 50,
             amount: 50,
             loadAmount: 50,
             feeSelector: 200,
             onChain: 1,
             nop: 0,
+            isExit: 0,
             nullifyLoadAmount: 1,
             nullifyAmount: 0,
         };
@@ -102,10 +168,10 @@ describe("Test balance-updater", function () {
         const feeApplied = Scalar.e(0);
 
         const output = {
-            newStBalanceSender: Scalar.sub(input.oldStBalanceSender, input.amount),
-            newStBalanceReceiver: Scalar.add(input.oldStBalanceReceiver, input.amount),
+            newBalanceSender: Scalar.sub(input.oldBalanceSender, input.amount),
+            newBalanceReceiver: Scalar.add(input.oldBalanceReceiver, input.amount),
+            newExitBalanceReceiver: Scalar.e(input.oldExitBalanceReceiver),
             fee2Charge: feeApplied,
-            isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
             isAmountNullified: 0,
         };
 
@@ -114,13 +180,15 @@ describe("Test balance-updater", function () {
 
     it("Should check nullify amount L1 transaction", async () => {
         const input = {
-            oldStBalanceSender: 100,
-            oldStBalanceReceiver: 200,
+            oldBalanceSender: 100,
+            oldBalanceReceiver: 200,
+            oldExitBalanceReceiver: 100,
             amount: 500,
             loadAmount: 50,
             feeSelector: 200,
             onChain: 1,
             nop: 0,
+            isExit: 0,
             nullifyLoadAmount: 0,
             nullifyAmount: 1,
         };
@@ -130,10 +198,10 @@ describe("Test balance-updater", function () {
         const feeApplied = Scalar.e(0);
 
         const output = {
-            newStBalanceSender: Scalar.add(input.oldStBalanceSender, input.loadAmount),
-            newStBalanceReceiver: input.oldStBalanceReceiver,
+            newBalanceSender: Scalar.add(input.oldBalanceSender, input.loadAmount),
+            newBalanceReceiver: input.oldBalanceReceiver,
+            newExitBalanceReceiver: Scalar.e(input.oldExitBalanceReceiver),
             fee2Charge: feeApplied,
-            isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
             isAmountNullified: 1,
         };
 
@@ -142,13 +210,15 @@ describe("Test balance-updater", function () {
 
     it("Should check underflow on L1 tx", async () => {
         const input = {
-            oldStBalanceSender: 100,
-            oldStBalanceReceiver: 200,
+            oldBalanceSender: 100,
+            oldBalanceReceiver: 200,
+            oldExitBalanceReceiver: 50,
             amount: 110,
             loadAmount: 0,
             feeSelector: 200,
             onChain: 1,
             nop: 0,
+            isExit: 0,
             nullifyLoadAmount: 0,
             nullifyAmount: 0,
         };
@@ -158,10 +228,10 @@ describe("Test balance-updater", function () {
         const feeApplied = Scalar.e(0);
 
         const output = {
-            newStBalanceSender: Scalar.e(input.oldStBalanceSender),
-            newStBalanceReceiver: Scalar.e(input.oldStBalanceReceiver),
+            newBalanceSender: Scalar.e(input.oldBalanceSender),
+            newBalanceReceiver: Scalar.e(input.oldBalanceReceiver),
+            newExitBalanceReceiver: Scalar.e(input.oldExitBalanceReceiver),
             fee2Charge: feeApplied,
-            isP2Nop: Scalar.isZero(input.amount) ? 0 : 1,
             isAmountNullified: 1,
         };
 
@@ -170,13 +240,15 @@ describe("Test balance-updater", function () {
 
     it("Should check underflow error on L2 tx", async () => {
         const input = {
-            oldStBalanceSender: 100,
-            oldStBalanceReceiver: 200,
+            oldBalanceSender: 100,
+            oldBalanceReceiver: 200,
+            oldExitBalanceReceiver: 100,
             amount: 98,
             loadAmount: 0,
             feeSelector: 200,
             onChain: 0,
             nop: 0,
+            isExit: 0,
             nullifyLoadAmount: 0,
             nullifyAmount: 0,
         };

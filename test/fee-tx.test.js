@@ -11,30 +11,37 @@ const { depositTx, random } = require("./helpers/helpers");
 
 describe("Test fee-tx", function () {
     this.timeout(0);
+
+    const reuse = false;
+    const pathTmp = "/tmp/circom_28537fw4bNa2wkhW";
+
     let circuitPath = path.join(__dirname, "fee-tx.test.circom");
     let circuit;
 
     let nLevels = 16;
 
     before( async() => {
-        const circuitCode = `
-            include "../src/fee-tx.circom";
-            component main = FeeTx(${nLevels});
-        `;
+        if (!reuse){
+            const circuitCode = `
+                include "../src/fee-tx.circom";
+                component main = FeeTx(${nLevels});
+            `;
 
-        fs.writeFileSync(circuitPath, circuitCode, "utf8");
+            fs.writeFileSync(circuitPath, circuitCode, "utf8");
 
-        circuit = await tester(circuitPath, {reduceConstraints:false});
-        await circuit.loadConstraints();
-        console.log("Constraints: " + circuit.constraints.length + "\n");
+            circuit = await tester(circuitPath, {reduceConstraints:false});
+            await circuit.loadConstraints();
+            console.log("Constraints: " + circuit.constraints.length + "\n");
+        } else {
+            const testerAux = require("circom").testerAux;
+            circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "fee-tx.test.circom"));
+        }
 
-        // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_30214TGGN7Rai1jx8";
-        // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "fee-tx.test.circom"));
     });
 
     after( async() => {
-        fs.unlinkSync(circuitPath);
+        if (!reuse)
+            fs.unlinkSync(circuitPath);
     });
 
     it("Should check empty fee-tx", async () => {
@@ -49,6 +56,8 @@ describe("Test fee-tx", function () {
             balance: 0,
             ay: 0,
             ethAddr: 0,
+            exitBalance: 0,
+            accumulatedHash: 0,
             siblings: Array(nLevels+1).fill(0),
         };
 
@@ -68,6 +77,8 @@ describe("Test fee-tx", function () {
             balance: random(2**128),
             ay: random(2**253),
             ethAddr: random(2**160),
+            exitBalance: random(2**192),
+            accumulatedHash: Scalar.e(random(2**253)),
             siblings: Array(nLevels+1).fill(0),
         };
 
@@ -153,6 +164,8 @@ describe("Test fee-tx", function () {
             balance: genInput.balance3[0],
             ay: genInput.ay3[0],
             ethAddr: genInput.ethAddr3[0],
+            exitBalance: genInput.exitBalance3[0],
+            accumulatedHash: genInput.accumulatedHash3[0],
             siblings: genInput.siblings3[0],
         };
 
@@ -171,6 +184,8 @@ describe("Test fee-tx", function () {
             balance: genInput.balance3[1],
             ay: genInput.ay3[1],
             ethAddr: genInput.ethAddr3[1],
+            exitBalance: genInput.exitBalance3[1],
+            accumulatedHash: genInput.accumulatedHash3[1],
             siblings: genInput.siblings3[1],
         };
 
@@ -190,6 +205,8 @@ describe("Test fee-tx", function () {
             balance: random(2**128),
             ay: random(2**253),
             ethAddr: random(2**160),
+            exitBalance: random(2**192),
+            accumulatedHash: Scalar.e(random(2**253)),
             siblings: Array(nLevels+1).fill(0),
         };
 

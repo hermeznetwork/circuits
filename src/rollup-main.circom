@@ -23,7 +23,6 @@ include "./fee-tx.circom";
  * @input imOnChain[nTx-1] - {Array(Bool)} - intermediary signals: decode transaction output onChain flag
  * @input imOutIdx[nTx-1] - {Array(Uint48)} - intermediary signals: decode transaction final index assigned
  * @input imStateRoot[nTx-1] - {Array(Field)} - intermediary signals: transaction final state root
- * @input imExitRoot[nTx-1] - {Array(Field)} - intermediary signals: transaction final exit root
  * @input imAccFeeOut[nTx-1][maxFeeTx] - {Array[Array(Uint192)]} - intermediary signals: transaction final accumulated fees
  * @input imStateRootFee[maxFeeTx - 1] - {Array(Field)} - intermediary signals: transaction fee final state root
  * @input imInitStateRootFee - {Field} - intermediary signals: final state root of all rollup transactions
@@ -55,6 +54,8 @@ include "./fee-tx.circom";
  * @input balance1[nTx] - {Array(Uint192)} - balance of the sender leaf
  * @input ay1[nTx] - {Array(Field)} - ay of the sender leaf
  * @input ethAddr1[nTx] - {Array(Uint160)} - ethAddr of the sender leaf
+ * @input exitBalance1[nTx] - {Array(Uint192)} - account exit balance
+ * @input accumulatedHash1[nTx] - {Array(Field)} - received transactions hash chain
  * @input siblings1[nTx][nLevels + 1] - {Array[Array(Field)]} - siblings merkle proof of the sender leaf
  * @input isOld0_1[nTx] - {Array(Bool)} - flag to require old key - value
  * @input oldKey1[nTx] - {Array(Uint48)} - old key of the sender leaf
@@ -65,20 +66,21 @@ include "./fee-tx.circom";
  * @input balance2[nTx] - {Array(Uint192)} - balance of the receiver leaf
  * @input ay2[nTx] - {Array(Field)} - ay of the receiver leaf
  * @input ethAddr2[nTx] - {Array(Uint160)} - ethAddr of the receiver leaf
+ * @input exitBalance2[nTx] - {Array(Uint192)} - account exit balance
+ * @input accumulatedHash2[nTx] - {Array(Field)} - received transactions hash chain
  * @input siblings2[nTx][nLevels + 1] - {Array[Array(Field)]} - siblings merkle proof of the receiver leaf
- * @input newExit[nTx] - {Array(Bool)} - determines if the transaction creates a new account in the exit tree
- * @input isOld0_2[nTx] - {Array(Bool)} - flag to require old key - value
- * @input oldKey2[nTx] - {Array(Uint48)} - old key of the sender leaf
- * @input oldValue2[nTx] - {Array(Field)} - old value of the sender leaf
  * @input tokenID3[maxFeeTx] - {Array(Uint32)} - tokenID of leafs feeIdxs
  * @input nonce3[maxFeeTx] - {Array(Uint40)} - nonce of leafs feeIdxs
  * @input sign3[maxFeeTx] - {Array(Bool)} - sign of leafs feeIdxs
  * @input balance3[maxFeeTx] - {Array(Uint192)} - balance of leafs feeIdxs
  * @input ay3[maxFeeTx] - {Array(Field)} - ay of leafs feeIdxs
  * @input ethAddr3[maxFeeTx] - {Array(Uint160)} - ethAddr of leafs feeIdxs
+ * @input exitBalance3[nTx] - {Array(Uint192)} - account exit balance
+ * @input accumulatedHash3[nTx] - {Array(Field)} - received transactions hash chain
  * @input siblings3[maxFeeTx][nLevels + 1] - {Array[Array(Field)}} - siblings merkle proof of leafs Idxs
  * @output hashGlobalInputs - {Field} - hash of all pretended input signals
  */
+
 template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     // Phases rollup-main circuit:
         // A: check binary signals
@@ -118,7 +120,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     signal private input imOutIdx[nTx-1];
     // rollup-tx
     signal private input imStateRoot[nTx-1];
-    signal private input imExitRoot[nTx-1];
     signal private input imAccFeeOut[nTx-1][maxFeeTx];
     // fee-tx
     signal private input imStateRootFee[maxFeeTx - 1];
@@ -165,6 +166,8 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     signal private input balance1[nTx];
     signal private input ay1[nTx];
     signal private input ethAddr1[nTx];
+    signal private input exitBalance1[nTx];
+    signal private input accumulatedHash1[nTx];
     signal private input siblings1[nTx][nLevels+1];
     // Required for inserts and deletes
     signal private input isOld0_1[nTx];
@@ -178,12 +181,9 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     signal private input balance2[nTx];
     signal private input ay2[nTx];
     signal private input ethAddr2[nTx];
+    signal private input exitBalance2[nTx];
+    signal private input accumulatedHash2[nTx];
     signal private input siblings2[nTx][nLevels+1];
-    signal private input newExit[nTx];
-    // Required for inserts and deletes
-    signal private input isOld0_2[nTx];
-    signal private input oldKey2[nTx];
-    signal private input oldValue2[nTx];
 
     // fee tx
     // State fees
@@ -193,6 +193,8 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     signal private input balance3[maxFeeTx];
     signal private input ay3[maxFeeTx];
     signal private input ethAddr3[maxFeeTx];
+    signal private input exitBalance3[maxFeeTx];
+    signal private input accumulatedHash3[maxFeeTx];
     signal private input siblings3[maxFeeTx][nLevels+1];
 
     var i;
@@ -215,7 +217,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
             fromBjjCompressed[i][j] * (fromBjjCompressed[i][j] - 1) === 0;
         }
         isOld0_1[i] * (isOld0_1[i] - 1) === 0;
-        isOld0_2[i] * (isOld0_2[i] - 1) === 0;
     }
 
     // B - decode transactions
@@ -231,6 +232,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
             decodeTx[i].inIdx <== imOutIdx[i-1];
         }
         decodeTx[i].txCompressedData <== txCompressedData[i];
+        decodeTx[i].maxNumBatch <== maxNumBatch[i];
         decodeTx[i].amountF <== amountF[i];
         decodeTx[i].toEthAddr <== toEthAddr[i];
         decodeTx[i].toBjjAy <== toBjjAy[i];
@@ -246,7 +248,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
 
         decodeTx[i].globalChainID <== globalChainID;
         decodeTx[i].currentNumBatch <== currentNumBatch;
-        decodeTx[i].maxNumBatch <== maxNumBatch[i];
         decodeTx[i].onChain <== onChain[i];
         decodeTx[i].newAccount <== newAccount[i];
         decodeTx[i].auxFromIdx <== auxFromIdx[i];
@@ -329,6 +330,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         rollupTx[i].rqToEthAddr <== rqToEthAddr[i];
         rollupTx[i].rqToBjjAy <== rqToBjjAy[i];
 
+        rollupTx[i].L1L2TxDataNum <== decodeTx[i].L1L2TxDataNum;
         rollupTx[i].sigL2Hash <== decodeTx[i].sigL2Hash;
         rollupTx[i].s <== s[i];
         rollupTx[i].r8x <== r8x[i];
@@ -347,6 +349,8 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         rollupTx[i].balance1 <== balance1[i];
         rollupTx[i].ay1 <== ay1[i];
         rollupTx[i].ethAddr1 <== ethAddr1[i];
+        rollupTx[i].exitBalance1 <== exitBalance1[i];
+        rollupTx[i].accumulatedHash1 <== accumulatedHash1[i];
         for (j = 0; j < nLevels+1; j++) {
             rollupTx[i].siblings1[j] <== siblings1[i][j]
         }
@@ -359,22 +363,18 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         rollupTx[i].nonce2 <== nonce2[i];
         rollupTx[i].sign2 <== sign2[i];
         rollupTx[i].balance2 <== balance2[i];
-        rollupTx[i].newExit <== newExit[i];
         rollupTx[i].ay2 <== ay2[i];
         rollupTx[i].ethAddr2 <== ethAddr2[i];
+        rollupTx[i].exitBalance2 <== exitBalance2[i];
+        rollupTx[i].accumulatedHash2 <== accumulatedHash2[i];
         for (j = 0; j < nLevels+1; j++) {
             rollupTx[i].siblings2[j] <== siblings2[i][j]
         }
-        rollupTx[i].isOld0_2 <== isOld0_2[i];
-        rollupTx[i].oldKey2 <== oldKey2[i];
-        rollupTx[i].oldValue2 <== oldValue2[i];
 
         if (i == 0) {
             rollupTx[i].oldStateRoot <== oldStateRoot;
-            rollupTx[i].oldExitRoot <== 0;
         } else {
             rollupTx[i].oldStateRoot <== imStateRoot[i-1];
-            rollupTx[i].oldExitRoot <== imExitRoot[i-1];
         }
     }
 
@@ -382,7 +382,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     ////////
     for (i = 0; i < nTx-1; i++) {
         rollupTx[i].newStateRoot  === imStateRoot[i];
-        rollupTx[i].newExitRoot  === imExitRoot[i];
         for (j = 0; j < maxFeeTx; j++){
             rollupTx[i].accFeeOut[j]  === imAccFeeOut[i][j];
         }
@@ -410,6 +409,8 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         feeTx[i].balance <== balance3[i];
         feeTx[i].ay <== ay3[i];
         feeTx[i].ethAddr <== ethAddr3[i];
+        feeTx[i].exitBalance <== exitBalance3[i];
+        feeTx[i].accumulatedHash <== accumulatedHash3[i];
 
         for (j = 0; j < nLevels+1; j++) {
             feeTx[i].siblings[j] <== siblings3[i][j]
@@ -438,7 +439,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
     hasherInputs.newLastIdx <== decodeTx[nTx-1].outIdx;
     hasherInputs.oldStateRoot <== oldStateRoot;
     hasherInputs.newStateRoot <== feeTx[maxFeeTx-1].newStateRoot;
-    hasherInputs.newExitRoot <== rollupTx[nTx-1].newExitRoot;
 
     var bitsL1TxFullData = (2*48 + 32 + 40 + 40 + 256 + 160);
     for (i = 0; i < maxL1Tx; i++){
@@ -447,19 +447,10 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         }
     }
 
-    var bitsL1L2TxData = (2*nLevels + 40 + 8);
+    var bitsL2TxData = (2*nLevels + 40 + 8);
     for (i = 0; i < nTx; i++){
-        // add fromIdx and toIdx
-        for (j = 0; j < 2*nLevels; j++ ){
-            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j];
-        }
-        // add amountF
-        for (j = 2*nLevels; j < (2*nLevels + 40); j++ ){
-            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j] * (1 - rollupTx[i].isAmountNullified);
-        }
-        // add fee
-        for (j = (2*nLevels + 40); j < (2*nLevels + 40 + 8); j++ ){
-            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j];
+        for (j = 0; j < bitsL2TxData; j++ ){
+            hasherInputs.L2TxsData[i*bitsL2TxData + j] <== decodeTx[i].L1L2TxData[j] * (1 - onChain[i]);
         }
     }
 

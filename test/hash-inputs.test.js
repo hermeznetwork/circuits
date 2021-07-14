@@ -10,6 +10,10 @@ const float40 = require("@hermeznetwork/commonjs").float40;
 
 describe("Test hash-inputs", function () {
     this.timeout(0);
+
+    const reuse = false;
+    const pathTmp = "/tmp/circom_11887n6Ze0NqySE6R";
+
     let circuitPath = path.join(__dirname, "hash-inputs.test.circom");
     let circuit;
 
@@ -19,24 +23,26 @@ describe("Test hash-inputs", function () {
     let maxFeeTx = 1;
 
     before( async() => {
-        const circuitCode = `
-            include "../src/hash-inputs.circom";
-            component main = HashInputs(${nLevels}, ${nTx}, ${maxL1Tx}, ${maxFeeTx});
-        `;
+        if (!reuse){
+            const circuitCode = `
+                include "../src/hash-inputs.circom";
+                component main = HashInputs(${nLevels}, ${nTx}, ${maxL1Tx}, ${maxFeeTx});
+            `;
 
-        fs.writeFileSync(circuitPath, circuitCode, "utf8");
+            fs.writeFileSync(circuitPath, circuitCode, "utf8");
 
-        circuit = await tester(circuitPath, {reduceConstraints:false});
-        await circuit.loadConstraints();
-        console.log("Constraints: " + circuit.constraints.length + "\n");
-
-        // const testerAux = require("circom").testerAux;
-        // const pathTmp = "/tmp/circom_31396TW55g3Y6rPLh";
-        // circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "hash-inputs.test.circom"));
+            circuit = await tester(circuitPath, {reduceConstraints:false});
+            await circuit.loadConstraints();
+            console.log("Constraints: " + circuit.constraints.length + "\n");
+        } else {
+            const testerAux = require("circom").testerAux;
+            circuit = await testerAux(pathTmp, path.join(__dirname, "circuits", "hash-inputs.test.circom"));
+        }
     });
 
     after( async() => {
-        fs.unlinkSync(circuitPath);
+        if (!reuse)
+            fs.unlinkSync(circuitPath);
     });
 
     it("Should check empty hash inputs", async () => {
@@ -53,10 +59,10 @@ describe("Test hash-inputs", function () {
             L1TxsFullDataB.unshift(0);
         }
 
-        const L1L2TxsDataScalar = Scalar.fromString(bb.getL1L2TxsData(), 16);
-        const L1L2TxsDataB = Scalar.bits(L1L2TxsDataScalar);
-        while(L1L2TxsDataB.length < (nTx * bb.L1L2TxDataB)){
-            L1L2TxsDataB.unshift(0);
+        const L2TxsDataScalar = Scalar.fromString(bb.getL2TxsData(), 16);
+        const L2TxsDataB = Scalar.bits(L2TxsDataScalar);
+        while(L2TxsDataB.length < (nTx * bb.L2TxDataB)){
+            L2TxsDataB.unshift(0);
         }
 
         const input = {
@@ -64,9 +70,8 @@ describe("Test hash-inputs", function () {
             newLastIdx: bb.getNewLastIdx(),
             oldStateRoot: bb.getOldStateRoot(),
             newStateRoot: bb.getNewStateRoot(),
-            newExitRoot: bb.getNewExitRoot(),
             L1TxsFullData: L1TxsFullDataB,
-            L1L2TxsData: L1L2TxsDataB,
+            L2TxsData: L2TxsDataB,
             feeTxsData: bb.input.feeIdxs,
             globalChainID: bb.chainID,
             currentNumBatch: bb.currentNumBatch,
@@ -120,9 +125,9 @@ describe("Test hash-inputs", function () {
             L1TxsDataB.unshift(0);
         }
 
-        const txsDataScalar = Scalar.fromString(bb.getL1L2TxsData(), 16);
+        const txsDataScalar = Scalar.fromString(bb.getL2TxsData(), 16);
         const txsDataB = Scalar.bits(txsDataScalar).reverse();
-        while(txsDataB.length < (nTx * bb.L1L2TxDataB)){
+        while(txsDataB.length < (nTx * bb.L2TxDataB)){
             txsDataB.unshift(0);
         }
 
@@ -131,9 +136,8 @@ describe("Test hash-inputs", function () {
             newLastIdx: bb.getNewLastIdx(),
             oldStateRoot: bb.getOldStateRoot(),
             newStateRoot: bb.getNewStateRoot(),
-            newExitRoot: bb.getNewExitRoot(),
             L1TxsFullData: L1TxsDataB,
-            L1L2TxsData: txsDataB,
+            L2TxsData: txsDataB,
             feeTxsData: bb.input.feeIdxs,
             globalChainID: bb.chainID,
             currentNumBatch: bb.currentNumBatch
