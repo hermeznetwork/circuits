@@ -23,6 +23,7 @@
   "license": "AGPL-3.0",
   "dependencies": {
     "@hermeznetwork/commonjs": "^0.3.3",
+    "@hermeznetwork/commonjs-old": "git+https://github.com/hermeznetwork/commonjs.git#72db600",
     "circom": "^0.5.45",
     "circom_runtime": "^0.1.9",
     "circomlib": "^0.5.2",
