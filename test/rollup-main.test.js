@@ -10,13 +10,13 @@ const Constants = require("@hermeznetwork/commonjs").Constants;
 const txUtils = require("@hermeznetwork/commonjs").txUtils;
 const float40 = require("@hermeznetwork/commonjs").float40;
 
-const { depositTx, assertBatch, assertAccountsBalances } = require("./helpers/helpers");
+const { depositTx, depositOnlyExitTx, assertBatch, assertAccountsBalances } = require("./helpers/helpers");
 
 describe("Test rollup-main", function () {
     this.timeout(0);
 
     const reuse = false;
-    const pathTmp = "/tmp/circom_19811t7ASOfti44RM";
+    const pathTmp = "/tmp/circom_3271zgfDdkUyFOw";
 
     let circuitPath = path.join(__dirname, "rollup-main.test.circom");
     let circuit;
@@ -881,5 +881,117 @@ describe("Test rollup-main", function () {
         } catch (error){
             expect(error.message.includes("Constraint doesn't match")).to.be.equal(true);
         }
+    });
+
+    it("Should check transaction to only-exit account type", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+        await depositTx(bb, account1, 1, 1000);
+        await depositOnlyExitTx(bb, account2, 1, 1000);
+
+        await bb.build();
+        await rollupDB.consolidate(bb);
+
+        // L2 transfer to only-exit account
+        const bb2 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: account2.idx,
+            amount: 100,
+            userFee: 126,
+            onChain: 0,
+            nonce: 0,
+        };
+
+        account1.signTx(tx);
+        bb2.addTx(tx);
+
+        await bb2.build();
+        await assertBatch(bb2, circuit);
+
+        // L2 transfer to ethereum address to an only-exit account
+        const bb3 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx2 = {
+            fromIdx: account1.idx,
+            toIdx: Constants.nullIdx,
+            toEthAddr: account2.ethAddr,
+            tokenID: 1,
+            amount: 50,
+            nonce: 0,
+            userFee: 126,
+        };
+
+        account1.signTx(tx2);
+        bb3.addTx(tx2);
+
+        await bb3.build();
+        await assertBatch(bb3, circuit);
+
+        // L1 force-exit from an only-exit account type
+        const bb4 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx3 = {
+            fromIdx: account2.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account2.ethAddr,
+            toIdx: Constants.exitIdx,
+            amount: 100,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb4.addTx(tx3);
+
+        await bb4.build();
+        await assertBatch(bb4, circuit);
+
+        // L1 force-transfer from an only-exit account type
+        const bb5 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx4 = {
+            fromIdx: account2.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account2.ethAddr,
+            toIdx: account1.idx,
+            amount: 100,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb5.addTx(tx4);
+
+        await bb5.build();
+        await assertBatch(bb5, circuit);
+
+        // L1 force-transfer to an only-exit account type
+        const bb6 = await rollupDB.buildBatch(nTx, nLevels, maxL1Tx, maxFeeTx);
+
+        const tx5 = {
+            fromIdx: account1.idx,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: account2.idx,
+            amount: 100,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb6.addTx(tx5);
+
+        await bb6.build();
+        await assertBatch(bb6, circuit);
     });
 });

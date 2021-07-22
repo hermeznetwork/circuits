@@ -19,6 +19,8 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  * @input tokenID - {Uint32} - tokenID signed in the transaction
  * @input tokenID1  - {Uint32} - tokenID of the sender leaf
  * @input tokenID2 - {Uint32} - tokenID of the receiver leaf
+ * @input sign2 - {Bool} - sign of the receiver leaf
+ * @input ay2 - {Field} - ay of the receiver leaf
  * @output isP1Insert - {Bool} - determines if processor 1 performs an INSERT function (sender)
  * @output key1 - {Uint48} - processor 1 key
  * @output key2 - {Uint48} - processor 2 key
@@ -27,6 +29,7 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  * @output P2_fnc0 - {Bool} - processor 2 bit 0 functionality
  * @output P2_fnc1 - {Bool} - processor 2 bit 1 functionality
  * @output isExit - {Bool} - determines if the transaction is an exit
+ * @output isOnlyExit - {Bool} - determines if the receiver account is an only-exit tyoe account
  * @output verifySignEnabled - {Bool} - determines if the eddsa signature needs to be verified
  * @output nop - {Bool} - determines if the transaction should be considered as a NOP transaction
  * @output checkToEthAddr - {Bool} - determines if receiver ethereum address needs to be checked
@@ -69,6 +72,9 @@ template RollupTxStates() {
     signal input tokenID1;
     signal input tokenID2;
 
+    signal input sign2;
+    signal input ay2;
+
     signal output isP1Insert;
     signal output key1;
     signal output key2;
@@ -77,6 +83,7 @@ template RollupTxStates() {
     signal output P2_fnc0;
     signal output P2_fnc1;
     signal output isExit;
+    signal output isOnlyExit;
     signal output verifySignEnabled;
     signal output nop;
     signal output checkToEthAddr;
@@ -141,6 +148,22 @@ template RollupTxStates() {
     checkIsExit.in[1] <== finalToIdx;
 
     isExit <== checkIsExit.out;
+
+    // Check if receiver is an exit-only account
+    ////////
+    // only-exit account
+    var SIGN_EXIT_ONLY = 1;
+    var AY_EXIT_ONLY = (1<<253) - 1; // 0x1FFF...FFFF
+
+    component checkSignIsOnlyExit = IsEqual();
+    checkSignIsOnlyExit.in[0] <== SIGN_EXIT_ONLY;
+    checkSignIsOnlyExit.in[1] <== sign2;
+
+    component checkAyIsOnlyExit = IsEqual();
+    checkAyIsOnlyExit.in[0] <== AY_EXIT_ONLY;
+    checkAyIsOnlyExit.in[1] <== ay2;
+
+    isOnlyExit <== checkSignIsOnlyExit.out*checkAyIsOnlyExit.out;
 
     // finalFromIdx == 0 --> NOP transaction
     ////////

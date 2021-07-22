@@ -188,6 +188,8 @@ template RollupTx(nLevels, maxFeeTx) {
     states.tokenID <== tokenID;
     states.tokenID1 <== tokenID1;
     states.tokenID2 <== tokenID2;
+    states.sign2 <== sign2;
+    states.ay2 <== ay2;
 
     // B - check request transaction fields
     ////////
@@ -428,7 +430,7 @@ template RollupTx(nLevels, maxFeeTx) {
     balanceUpdater.feeSelector <== userFee;
     balanceUpdater.onChain <== onChain;
     balanceUpdater.nop <== states.nop;
-    balanceUpdater.isExit <== states.isExit;
+    balanceUpdater.isExit <== 1 - (1 - states.isExit)*(1 - states.isOnlyExit);
     balanceUpdater.nullifyLoadAmount <== states.nullifyLoadAmount;
     balanceUpdater.nullifyAmount <== states.nullifyAmount;
 
