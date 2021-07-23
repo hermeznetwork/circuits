@@ -11,7 +11,7 @@ class UpgradeDb {
 
     /**
      * constructor
-     * @param {Object} rollupDb - RollupDb with ols accounts
+     * @param {Object} rollupDb - RollupDb with old accounts
      * @param {Number} nAccounts - maximum accounts to update in each proof
      * @param {Number} nLevels - merkle tree depth
      */
@@ -41,12 +41,12 @@ class UpgradeDb {
      */
     async doUpgrade(){
         let initKeyStateTree;
-        let finalKeystateTree;
+        let finalKeyStateTree;
 
         for (let i = 0; i < this.numProofs; i++){
             initKeyStateTree = this.initIdx + i*this.nAccounts;
-            finalKeystateTree = this.initIdx + (i+1)*this.nAccounts;
-            await this._buildSingleProof(initKeyStateTree, finalKeystateTree);
+            finalKeyStateTree = this.initIdx + (i+1)*this.nAccounts;
+            await this._buildSingleProof(initKeyStateTree, finalKeyStateTree);
         }
 
         this.isUpgraded = true;
@@ -152,13 +152,7 @@ class UpgradeDb {
      * @returns {Object} proof input
      */
     getProof(numProof){
-        if (!this.isUpgraded){
-            throw new Error("Upgrade has not been performed");
-        }
-
-        if (numProof > this.numProofs){
-            throw new Error(`Proof ${numProof} is greater than total necessary proofs, ${this.numProofs}`);
-        }
+        this._sanityCheck(numProof);
 
         return this.proofs[numProof];
     }
