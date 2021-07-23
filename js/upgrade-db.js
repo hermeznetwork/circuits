@@ -11,7 +11,7 @@ class UpgradeDb {
 
     /**
      * constructor
-     * @param {Object} rollupDb - RollupDb with ols accounts
+     * @param {Object} rollupDb - RollupDb with old accounts
      * @param {Number} nAccounts - maximum accounts to update in each proof
      * @param {Number} nLevels - merkle tree depth
      */

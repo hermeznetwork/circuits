@@ -29,7 +29,7 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
  * @output P2_fnc0 - {Bool} - processor 2 bit 0 functionality
  * @output P2_fnc1 - {Bool} - processor 2 bit 1 functionality
  * @output isExit - {Bool} - determines if the transaction is an exit
- * @output isOnlyExit - {Bool} - determines if the receiver account is an only-exit tyoe account
+ * @output isOnlyExit - {Bool} - determines if the receiver account is an only-exit type account
  * @output verifySignEnabled - {Bool} - determines if the eddsa signature needs to be verified
  * @output nop - {Bool} - determines if the transaction should be considered as a NOP transaction
  * @output checkToEthAddr - {Bool} - determines if receiver ethereum address needs to be checked
