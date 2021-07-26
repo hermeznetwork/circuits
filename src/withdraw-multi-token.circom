@@ -6,8 +6,9 @@ include "../node_modules/circomlib/circuits/sha256/sha256.circom";
 include "./lib/hash-state.circom"
 
 /**
- * Verify withdrawal by proving that a leaf exist on the exit tree
+ * Verify multi token withdrawal by proving that a leaf exist on the state tree with a determined exit balance
  * @param nLevels - merkle tree depth
+ * @param nTokens - number of tokens to withdraw
  * @input rootState - {Field} - state tree root
  * @input ethAddr - {Uint160} - ethereum address
  * @input tokenIDs - {Array(Uint32)} - token identifiers
@@ -27,7 +28,7 @@ template WithdrawMultiToken(nLevels, nTokens) {
 
     // private inputs
     signal private input rootState;
-	signal private input ethAddr;
+    signal private input ethAddr;
     signal private input tokenIDs[nTokens];
     signal private input nonces[nTokens];
     signal private input balances[nTokens];
@@ -39,13 +40,14 @@ template WithdrawMultiToken(nLevels, nTokens) {
     signal private input siblingsStates[nTokens][nLevels + 1];
 
     var i;
+    var j;
 
-    // compute account state hash
-    ////////
     component accountsState[nTokens];
     component smtVerify[nTokens];
 
     for(i = 0; i < nTokens; i++) {
+        // compute account state hash
+        ////////
         accountsState[i] = HashState();
         accountsState[i].tokenID <== tokenIDs[i];
         accountsState[i].nonce <== nonces[i];
@@ -62,7 +64,7 @@ template WithdrawMultiToken(nLevels, nTokens) {
         smtVerify[i].enabled <== 1;
         smtVerify[i].fnc <== 0;
         smtVerify[i].root <== rootState;
-        for (var j = 0; j < nLevels + 1; j++) {
+        for (j = 0; j < nLevels + 1; j++) {
             smtVerify[i].siblings[j] <== siblingsStates[i][j];
         }
         smtVerify[i].oldKey <== 0;
@@ -128,8 +130,10 @@ template HashInputsWithdrawalMulti(nLevels, nTokens){
 
         // tokenID
         n2bTokenIDs[i].in <== tokenIDs[i];
+
         // exitBalance
         n2bExitBalances[i].in <== exitBalances[i];
+
         // idx
         n2bIdxs[i].in <== idxs[i];
         var paddingIdx = 0;
@@ -159,24 +163,24 @@ template HashInputsWithdrawalMulti(nLevels, nTokens){
     offset = offset + bitsEthAddr;
 
     // add tokenID
-    for(var i = 0; i < nTokens; i++) {
-        for (var j = 0; j < bitsTokenID; j++) {
+    for(i = 0; i < nTokens; i++) {
+        for (j = 0; j < bitsTokenID; j++) {
             inputsHasher.in[offset + bitsTokenID - 1 - j] <== n2bTokenIDs[i].out[j];
         }
         offset = offset + bitsTokenID;
     }
 
     // add exitBalance
-    for(var i = 0; i < nTokens; i++) {
-        for (var j  = 0; j < bitsExitBalance; j++) {
+    for(i = 0; i < nTokens; i++) {
+        for (j  = 0; j < bitsExitBalance; j++) {
             inputsHasher.in[offset + bitsExitBalance - 1 - j] <== n2bExitBalances[i].out[j];
         }
         offset = offset + bitsExitBalance;
     }
 
     // add idx
-    for(var i = 0; i < nTokens; i++) {
-        for (var j = 0; j < bitsIdx; j++) {
+    for(i = 0; i < nTokens; i++) {
+        for (j = 0; j < bitsIdx; j++) {
             inputsHasher.in[offset + bitsIdx - 1 - j] <== n2bIdxs[i].out[j];
         }
         offset = offset + bitsIdx;
