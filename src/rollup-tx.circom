@@ -484,7 +484,7 @@ template RollupTx(nLevels, maxFeeTx) {
     // J - smt processors
     ////////
     // processor 1: sender
-    component processor1 = SMTProcessor(nLevels+1) ;
+    component processor1 = SMTProcessor(nLevels+1);
     processor1.oldRoot <== oldStateRoot;
     for (i = 0; i < nLevels + 1; i++) {
         processor1.siblings[i] <== siblings1[i];
@@ -498,7 +498,7 @@ template RollupTx(nLevels, maxFeeTx) {
     processor1.fnc[1] <== states.P1_fnc1;
 
     // processor 2: receiver
-    component processor2 = SMTProcessor(nLevels+1) ;
+    component processor2 = SMTProcessor(nLevels+1);
     processor2.oldRoot <== processor1.newRoot;
     for (i = 0; i < nLevels + 1; i++) {
         processor2.siblings[i] <== siblings2[i];
