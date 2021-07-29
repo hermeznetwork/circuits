@@ -10,13 +10,13 @@ const Account = require("@hermeznetwork/commonjs").HermezAccount;
 const Constants = require("@hermeznetwork/commonjs").Constants;
 const float40 = require("@hermeznetwork/commonjs").float40;
 
-const { depositTx, getSingleTxInput, assertTxs } = require("./helpers/helpers");
+const { depositTx, depositOnlyExitTx, getSingleTxInput, assertTxs } = require("./helpers/helpers");
 
 describe("Test rollup-tx", function () {
     this.timeout(0);
 
     const reuse = false;
-    const pathTmp = "/tmp/circom_28537fw4bNa2wkhW";
+    const pathTmp = "/tmp/circom_3097933gswsS7cSqk";
 
     let circuitPath = path.join(__dirname, "rollup-tx.test.circom");
     let circuit;
@@ -486,6 +486,118 @@ describe("Test rollup-tx", function () {
         await assertTxs(bb2, circuit);
     });
 
+    it("Should check transactions to only-exit account type", async () => {
+        const rollupDB = await newState();
+
+        const bb = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+        depositTx(bb, account1, 1, 1000);
+        depositOnlyExitTx(bb, account2, 1, 1000);
+
+        await bb.build();
+        await rollupDB.consolidate(bb);
+
+        // L2 transfer to only-exit account
+        const bb2 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx = {
+            fromIdx: 256,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: 0,
+            toIdx: 257,
+            amount: 100,
+            userFee: 126,
+            onChain: 0,
+            nonce: 0,
+        };
+
+        account1.signTx(tx);
+        bb2.addTx(tx);
+
+        await bb2.build();
+        await assertTxs(bb2, circuit);
+
+        // L2 transfer to ethereum address to an only-exit account
+        const bb3 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx2 = {
+            fromIdx: 256,
+            toIdx: Constants.nullIdx,
+            toEthAddr: account2.ethAddr,
+            tokenID: 1,
+            amount: Scalar.e(50),
+            nonce: 0,
+            userFee: 126,
+        };
+
+        account1.signTx(tx2);
+        bb3.addTx(tx2);
+
+        await bb3.build();
+        await assertTxs(bb3, circuit);
+
+        // L1 force-exit from an only-exit account type
+        const bb4 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx3 = {
+            fromIdx: 257,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account2.ethAddr,
+            toIdx: Constants.exitIdx,
+            amount: 100,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb4.addTx(tx3);
+
+        await bb4.build();
+        await assertTxs(bb4, circuit);
+
+        // L1 force-transfer from an only-exit account type
+        const bb5 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx4 = {
+            fromIdx: 257,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account2.ethAddr,
+            toIdx: 256,
+            amount: 100,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb5.addTx(tx4);
+
+        await bb5.build();
+        await assertTxs(bb5, circuit);
+
+        // L1 force-transfer to an only-exit account type
+        const bb6 = await rollupDB.buildBatch(maxTx, nLevels, maxL1Tx, nTokens);
+
+        const tx5 = {
+            fromIdx: 256,
+            loadAmountF: 0,
+            tokenID: 1,
+            fromBjjCompressed: 0,
+            fromEthAddr: account1.ethAddr,
+            toIdx: 257,
+            amount: 100,
+            userFee: 0,
+            onChain: true
+        };
+
+        bb6.addTx(tx5);
+
+        await bb6.build();
+        await assertTxs(bb6, circuit);
+    });
+
     it("Should check L1 'createAccountDeposit' tx with invalid Bjj", async () => {
         const rollupDB = await newState();
 
@@ -924,16 +1036,3 @@ describe("Test rollup-tx", function () {
         }
     });
 });
-
-
-// await rollupDB.consolidate(bb3);
-
-//         const stateA = await rollupDB.getStateByIdx(256);
-//         const stateB = await rollupDB.getStateByIdx(257);
-
-//         console.log(stateA);
-//         console.log(`   ${Scalar.fromString(stateA.ay, 16)}`);
-//         console.log(`   ${Scalar.fromString(stateA.ethAddr, 16)}`);
-//         console.log(stateB);
-//         console.log(`   ${Scalar.fromString(stateB.ay, 16)}`);
-//         console.log(`   ${Scalar.fromString(stateB.ethAddr, 16)}`);

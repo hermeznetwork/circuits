@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const fs = require("fs");
 const path = require("path");
 const tester = require("circom").tester;
+const Scalar = require("ffjavascript").Scalar;
 
 const Constants = require("@hermeznetwork/commonjs").Constants;
 
@@ -57,6 +58,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 4,
             tokenID1: 5,
             tokenID2: 6,
+            sign2: 0,
+            ay2: 0,
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -69,6 +72,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 0,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 0,
             nop: 0,
             checkToEthAddr: 0,
@@ -101,6 +105,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -113,6 +119,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 1,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 0,
             nop: 0,
             checkToEthAddr: 0,
@@ -150,6 +157,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 4,
             tokenID1: 4,
             tokenID2: 6,
+            sign2: 0,
+            ay2: 0,
         };
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -162,6 +171,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 0,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 0,
             nop: 0,
             checkToEthAddr: 0,
@@ -206,6 +216,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -218,6 +230,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 1,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 0,
             nop: 0,
             checkToEthAddr: 0,
@@ -291,6 +304,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -303,6 +318,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 1,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 0,
             nop: 0,
             checkToEthAddr: 0,
@@ -376,6 +392,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -388,6 +406,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 1,
             isExit: 1,
+            isOnlyExit: 0,
             verifySignEnabled: 0,
             nop: 0,
             checkToEthAddr: 0,
@@ -458,6 +477,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -470,6 +491,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 1,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 1,
             nop: 0,
             checkToEthAddr: 0,
@@ -502,6 +524,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -514,6 +538,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 1,
             isExit: 1,
+            isOnlyExit: 0,
             verifySignEnabled: 1,
             nop: 0,
             checkToEthAddr: 0,
@@ -546,6 +571,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -558,6 +585,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 1,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 1,
             nop: 0,
             checkToEthAddr: 1,
@@ -590,6 +618,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -602,6 +632,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 1,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 1,
             nop: 0,
             checkToEthAddr: 0,
@@ -635,6 +666,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         const w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
@@ -647,6 +680,7 @@ describe("Test rollup-tx-states", function () {
             P2_fnc0: 0,
             P2_fnc1: 0,
             isExit: 0,
+            isOnlyExit: 0,
             verifySignEnabled: 0,
             nop: 1,
             checkToEthAddr: 0,
@@ -679,6 +713,8 @@ describe("Test rollup-tx-states", function () {
             tokenID: 3,
             tokenID1: 3,
             tokenID2: 3,
+            sign2: 0,
+            ay2: 0,
         };
 
         // loadAmount must be 0 if L2 Tx
@@ -697,5 +733,73 @@ describe("Test rollup-tx-states", function () {
         } catch(error){
             expect(error.message.includes("Constraint doesn't match")).to.be.equal(true);
         }
+    });
+
+    it("Should check states for only-exit account", async () => {
+        // Should take fromIdx as key1
+        // Should UPDATE on processor 1
+        // Should take toIdx as key2
+        // Should UPDATE on processor 2
+
+        const input = {
+            fromIdx: 256,
+            toIdx: 257,
+            toEthAddr: 0,
+            auxFromIdx: 0,
+            auxToIdx: 0,
+            amount: 30,
+            loadAmount: 0,
+            newAccount: 0,
+            onChain: 0,
+            // check onChain params
+            fromEthAddr: 2,
+            ethAddr1: 2,
+            tokenID: 3,
+            tokenID1: 3,
+            tokenID2: 3,
+            sign2: Constants.onlyExitBjjSign,
+            ay2: Scalar.fromString(Constants.onlyExitBjjAy, 16),
+        };
+
+        let w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        const output = {
+            isP1Insert: 0,
+            key1: input.fromIdx,
+            P1_fnc0: 0,
+            P1_fnc1: 1,
+            key2: input.toIdx,
+            P2_fnc0: 0,
+            P2_fnc1: 1,
+            isExit: 0,
+            isOnlyExit: 1,
+            verifySignEnabled: 1,
+            nop: 0,
+            checkToEthAddr: 0,
+            checkToBjj: 0,
+            nullifyLoadAmount: 0,
+            nullifyAmount: 0,
+        };
+        await circuit.assertOut(w, output);
+
+        // modify sign2
+        input.sign2 = 0;
+        output.isOnlyExit = 0;
+
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
+
+        // modify ay2 + 1
+        input.sign2 = 1;
+        input.ay2 = Scalar.add(input.ay2, 1);
+
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
+
+        // modify ay2 - 1
+        input.ay2 = Scalar.sub(input.ay2, 2);
+        output.isOnlyExit = 0;
+
+        w = await circuit.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+        await circuit.assertOut(w, output);
     });
 });

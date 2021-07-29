@@ -4,6 +4,7 @@ const Scalar = require("ffjavascript").Scalar;
 const { float40 } = require("@hermeznetwork/commonjs");
 const feeUtils = require("@hermeznetwork/commonjs").feeTable;
 const txUtils = require("@hermeznetwork/commonjs").txUtils;
+const Constants = require("@hermeznetwork/commonjs").Constants;
 
 async function depositTx(bb, account, tokenID, loadAmount) {
     bb.addTx({
@@ -11,6 +12,18 @@ async function depositTx(bb, account, tokenID, loadAmount) {
         loadAmountF: float40.fix2Float(loadAmount),
         tokenID: tokenID,
         fromBjjCompressed: account.bjjCompressed,
+        fromEthAddr: account.ethAddr,
+        toIdx: 0,
+        onChain: true
+    });
+}
+
+async function depositOnlyExitTx(bb, account, tokenID, loadAmount) {
+    bb.addTx({
+        fromIdx: 0,
+        loadAmountF: float40.fix2Float(loadAmount),
+        tokenID: tokenID,
+        fromBjjCompressed: Constants.onlyExitBjjCompressed,
         fromEthAddr: account.ethAddr,
         toIdx: 0,
         onChain: true
@@ -200,4 +213,5 @@ module.exports = {
     assertAccountsBalances,
     printSignals,
     printBatchOutputs,
+    depositOnlyExitTx
 };
