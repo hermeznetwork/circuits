@@ -5,9 +5,9 @@ name: Main CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master, feature-upgrade-v1]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Checkout code
-        uses: actions/checkout@v2  
+        uses: actions/checkout@v2
       - name: setup
         run: npm run setup
       - name: eslint

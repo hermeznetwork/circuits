@@ -22,6 +22,7 @@ include "./lib/utils-bjj.circom";
  * @input ay - {Field} babyjubjub y coordinate
  * @input siblingsState[nLevels + 1] - {Array(Field)} - siblings merkle proof
  * @input ethAddrCaller - {Uint160} - ethereum address that will call the SC
+ * @input ethAddrCallerAuth - {Uint160} - ethereum address authorized to call the SC
  * @input ethAddrBeneficiary - {Uint160} - ethereum address that will recieve the withdraw
  * @input s - {Field} -  eddsa signature field of the hashGlobalInputs
  * @input r8x - {Field} -  eddsa signature field of the hashGlobalInputs
@@ -45,8 +46,9 @@ template WithdrawBjj(nLevels) {
     signal private input ay;
     signal private input siblingsState[nLevels + 1];
 
-    // transaction L2 signature
+    // withdraw bjj parameters
     signal private input ethAddrCaller;
+    signal private input ethAddrCallerAuth;
     signal private input ethAddrBeneficiary;
     signal private input s;
     signal private input r8x;
@@ -79,10 +81,40 @@ template WithdrawBjj(nLevels) {
 	smtVerify.key <== idx;
 	smtVerify.value <== accountState.out;
 
+    // check ethAddrCaller
+    var ETH_ADDR_ANY = (1<<160) - 1; // 0xFFFF...FFFF
+    component isAuthEthAddrAny = IsEqual();
+    isAuthEthAddrAny.in[0] <== ETH_ADDR_ANY;
+    isAuthEthAddrAny.in[1] <== ethAddrCallerAuth;
+
+    component checkToEthAddr = ForceEqualIfEnabled();
+    checkToEthAddr.in[0] <== ethAddrCaller;
+    checkToEthAddr.in[1] <== ethAddrCallerAuth;
+    checkToEthAddr.enabled <== 1 - isAuthEthAddrAny.out
+
+    // calculate signature hash
+    component hashSig = Poseidon(4);
+    hashSig.inputs[0] <== ethAddrCallerAuth;
+    hashSig.inputs[1] <== ethAddrBeneficiary;
+    hashSig.inputs[2] <== rootState;
+    hashSig.inputs[3] <== idx;
+
     // computes babyjubjub X coordinate
     component getAx = AySign2Ax();
     getAx.ay <== ay;
     getAx.sign <== sign;
+
+    // verify hash signature
+    component sigVerifier = EdDSAPoseidonVerifier();
+    sigVerifier.enabled <== 1;
+
+    sigVerifier.Ax <== getAx.ax;
+    sigVerifier.Ay <== ay;
+
+    sigVerifier.S <== s;
+    sigVerifier.R8x <== r8x;
+    sigVerifier.R8y <== r8y;
+    sigVerifier.M <== hashSig.out;
 
     // compute hash global inputs
     ////////
@@ -98,17 +130,7 @@ template WithdrawBjj(nLevels) {
     // set public output
     hashGlobalInputs <== hasherInputs.hashInputsOut;
 
-    // verify signature
-    component sigVerifier = EdDSAPoseidonVerifier();
-    sigVerifier.enabled <== 1;
 
-    sigVerifier.Ax <== getAx.ax;
-    sigVerifier.Ay <== ay;
-
-    sigVerifier.S <== s;
-    sigVerifier.R8x <== r8x;
-    sigVerifier.R8y <== r8y;
-    sigVerifier.M <== hashGlobalInputs;
 }
 
 /**
