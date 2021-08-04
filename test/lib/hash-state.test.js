@@ -45,7 +45,7 @@ describe("Test hash-state", function () {
             tokenID: Scalar.e(state.tokenID),
             nonce: Scalar.e(state.nonce),
             balance: Scalar.e(state.balance),
-            sign: Scalar.e(state.tokenID),
+            sign: Scalar.e(state.sign),
             ay: Scalar.fromString(state.ay, 16),
             ethAddr: Scalar.fromString(state.ethAddr, 16),
             exitBalance: Scalar.e(state.exitBalance),

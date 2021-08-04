@@ -1,18 +1,13 @@
-const { expect } = require("chai");
 const fs = require("fs");
 const path = require("path");
 const tester = require("circom").tester;
-const Scalar = require("ffjavascript").Scalar;
 const SMTMemDB = require("circomlib").SMTMemDB;
 
 const commonjsOld = require("@hermeznetwork/commonjs-old");
-const RollupDB = require("@hermeznetwork/commonjs").RollupDB;
 const Account = require("@hermeznetwork/commonjs").HermezAccount;
 const Constants = require("@hermeznetwork/commonjs").Constants;
-const txUtils = require("@hermeznetwork/commonjs").txUtils;
-const float40 = require("@hermeznetwork/commonjs").float40;
 
-const { depositTx, printSignals } = require("../helpers/helpers");
+const { depositTx } = require("../helpers/helpers");
 const { assertUpgradeRoot } = require("./helpers-upgrade/helpers-upgrade");
 const UpgradeDb = require("../../js/upgrade-db");
 
