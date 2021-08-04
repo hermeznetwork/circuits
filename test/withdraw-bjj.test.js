@@ -27,11 +27,57 @@ describe("Test withdraw-bjj", function () {
 
         circuit = await tester(circuitPath, {reduceConstraints:false});
         await circuit.loadConstraints();
-        console.log("Constraints: " + circuit.constraints.length + "\n");
+        console.log("Constraints WithdrawBjj: " + circuit.constraints.length + "\n");
     });
 
     after( async() => {
         fs.unlinkSync(circuitPath);
+    });
+
+    it("Should check HashInputsWithdrawalBjj", async () => {
+        let circuitPathHash = path.join(__dirname, "state-hash.test.circom");
+        let circuitHash;
+        const NLEVELS = 32;
+
+        const circuitCode = `
+            include "../src/withdraw-bjj.circom";
+            component main = HashInputsWithdrawalBjj(${NLEVELS});
+        `;
+
+        fs.writeFileSync(circuitPathHash, circuitCode, "utf8");
+
+        circuitHash = await tester(circuitPathHash, {reduceConstraints:false});
+        await circuitHash.loadConstraints();
+        console.log("Constraints HashInputsWithdrawalBjj: " + circuitHash.constraints.length + "\n");
+
+        const hashElements = {
+            rootState: Scalar.e("13969287823376165653186379345270261451887728599848123787165210811264316379055"),
+            ethAddrCaller: Scalar.fromString("0x7e5f4552091a69125d5dfcb7b8c2659029395bdf", 16),
+            ethAddrBeneficiary: Scalar.fromString("0x7e5f4552091a69125d5dfcb7b8c2659029395bdf", 16),
+            tokenID: Scalar.e("0"),
+            exitBalance: Scalar.e("100"),
+            idx: Scalar.e("256"),
+        };
+
+        const input = {
+            rootState: hashElements.rootState,
+            ethAddrCaller: hashElements.ethAddrCaller,
+            ethAddrBeneficiary: hashElements.ethAddrBeneficiary,
+            tokenID: hashElements.tokenID,
+            exitBalance: hashElements.exitBalance,
+            idx: hashElements.idx
+        };
+
+        const w = await circuitHash.calculateWitness(input, {logTrigger:false, logOutput: false, logSet: false});
+
+        const hashJs = withdrawUtils.hashInputsWithdrawBjj(hashElements);
+        const output = {
+            hashInputsOut: hashJs
+        };
+
+        await circuitHash.assertOut(w, output);
+
+        fs.unlinkSync(circuitPathHash);
     });
 
     it("Should check succesfull withdraw", async () => {
@@ -71,7 +117,6 @@ describe("Test withdraw-bjj", function () {
 
         expect(exitInfo.found).to.be.equal(true);
 
-
         const tmpExitInfo = exitInfo;
         const tmpState = tmpExitInfo.state;
 
@@ -99,6 +144,7 @@ describe("Test withdraw-bjj", function () {
             inputWithdraw.rootState,
             inputWithdraw.idx
         );
+
         expect(withdrawUtils.verifyWithdrawBjjSig(
             inputWithdraw.ethAddrCallerAuth.toString(16),
             inputWithdraw.ethAddrBeneficiary.toString(16),
@@ -107,6 +153,7 @@ describe("Test withdraw-bjj", function () {
             account1,
             signature
         )).to.be.equal(true);
+
         inputWithdraw.s = signature.S;
         inputWithdraw.r8x = signature.R8[0];
         inputWithdraw.r8y = signature.R8[1];
@@ -158,7 +205,6 @@ describe("Test withdraw-bjj", function () {
 
         expect(exitInfo.found).to.be.equal(true);
 
-
         const tmpExitInfo = exitInfo;
         const tmpState = tmpExitInfo.state;
 
@@ -195,6 +241,7 @@ describe("Test withdraw-bjj", function () {
             account1,
             signature
         )).to.be.equal(true);
+
         inputWithdraw.s = signature.S;
         inputWithdraw.r8x = signature.R8[0];
         inputWithdraw.r8y = signature.R8[1];
@@ -213,7 +260,7 @@ describe("Test withdraw-bjj", function () {
     it("Should check error invalid input SMT", async () => {
         // Wrong input when checking SMTVerifier
         const inputSMTKO = Object.assign({}, inputWithdraw);
-        inputSMTKO.ethAddrBeneficiary = Scalar.e(123123123);
+        inputSMTKO.balance = Scalar.e(123123123);
 
         try {
             await circuit.calculateWitness(inputSMTKO, {logTrigger:false, logOutput: false, logSet: false});
@@ -223,10 +270,10 @@ describe("Test withdraw-bjj", function () {
         }
     });
 
-    it("Should check error invalid input eth addr", async () => {
+    it("Should check error beneficiary address", async () => {
         // Wrong input when checking SMTVerifier
         const inputEthAddrKO = Object.assign({}, inputWithdraw);
-        inputEthAddrKO.balance = Scalar.e(4);
+        inputEthAddrKO.ethAddrBeneficiary = Scalar.e(4);
 
         try {
             await circuit.calculateWitness(inputEthAddrKO, {logTrigger:false, logOutput: false, logSet: false});

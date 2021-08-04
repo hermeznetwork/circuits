@@ -8,10 +8,10 @@ include "./lib/hash-state.circom"
 include "./lib/utils-bjj.circom";
 
 /**
- * Verify withdrawalBjj by proving that a leaf exist on the exit tree
+ * Verify withdrawalBjj by proving that a leaf exist on the state tree
  * @param nLevels - merkle tree depth
  * @input rootState - {Field} - state tree root
- * @input ethAddrStateState - {Uint160} - ethereum address of the state
+ * @input ethAddrState - {Uint160} - ethereum address of the state
  * @input tokenID - {Uint32} - token identifier
  * @input nonce - {Uint40} - nonce
  * @input balance - {Uint192} - balance
@@ -35,7 +35,7 @@ template WithdrawBjj(nLevels) {
 
     // private inputs
     signal private input rootState;
-	signal private input ethAddrState;
+    signal private input ethAddrState;
     signal private input tokenID;
     signal private input nonce;
     signal private input balance;
@@ -118,7 +118,7 @@ template WithdrawBjj(nLevels) {
 
     // compute hash global inputs
     ////////
-    component hasherInputs = HashInputsWithdrawal(nLevels);
+    component hasherInputs = HashInputsWithdrawalBjj(nLevels);
 
     hasherInputs.rootState <== rootState;
     hasherInputs.ethAddrCaller <== ethAddrCaller;
@@ -129,8 +129,6 @@ template WithdrawBjj(nLevels) {
 
     // set public output
     hashGlobalInputs <== hasherInputs.hashInputsOut;
-
-
 }
 
 /**
@@ -144,10 +142,10 @@ template WithdrawBjj(nLevels) {
  * @input idx - {Uint48} - merkle tree index
  * @output hashInputsOut - {Field} - hash inputs signals
  */
-template HashInputsWithdrawal(nLevels){
+template HashInputsWithdrawalBjj(nLevels){
     // bits for each public input type
     var bitsRootState = 256;
-    var bitsethAddr = 160;
+    var bitsEthAddr = 160;
     var bitsTokenID = 32;
     var bitsExitBalance = 192;
     var bitsIdx = 48; // MAX_NLEVELS
@@ -199,7 +197,7 @@ template HashInputsWithdrawal(nLevels){
 
     // build SHA256 with all inputs
     ////////
-    var totalBitsSha256 = bitsRootState + bitsethAddr + bitsethAddr + bitsTokenID + bitsExitBalance +  bitsIdx;
+    var totalBitsSha256 = bitsRootState + bitsEthAddr + bitsEthAddr + bitsTokenID + bitsExitBalance +  bitsIdx;
     component inputsHasher = Sha256(totalBitsSha256);
 
     var offset = 0;
@@ -211,16 +209,16 @@ template HashInputsWithdrawal(nLevels){
     offset = offset + bitsRootState;
 
     // add ethAddrCaller
-    for (i = 0; i < bitsethAddr; i++) {
-        inputsHasher.in[offset + bitsethAddr - 1 - i] <== n2bEthAddrCaller.out[i];
+    for (i = 0; i < bitsEthAddr; i++) {
+        inputsHasher.in[offset + bitsEthAddr - 1 - i] <== n2bEthAddrCaller.out[i];
     }
-    offset = offset + bitsethAddr;
+    offset = offset + bitsEthAddr;
 
     // add ethAddrBeneficiary
-    for (i = 0; i < bitsethAddr; i++) {
-        inputsHasher.in[offset + bitsethAddr - 1 - i] <== n2bEthAddrBeneficiary.out[i];
+    for (i = 0; i < bitsEthAddr; i++) {
+        inputsHasher.in[offset + bitsEthAddr - 1 - i] <== n2bEthAddrBeneficiary.out[i];
     }
-    offset = offset + bitsethAddr;
+    offset = offset + bitsEthAddr;
 
     // add tokenID
     for (i = 0; i < bitsTokenID; i++) {
@@ -248,6 +246,3 @@ template HashInputsWithdrawal(nLevels){
 
     hashInputsOut <== n2bHashInputsOut.out;
 }
-
-component main = WithdrawBjj(32);
-
