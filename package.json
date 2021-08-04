@@ -4,8 +4,9 @@
   "description": "zkSNARK circuit implementing hermez protocol",
   "scripts": {
     "setup": "npm i",
-    "eslint": "npx eslint test/** tools/*.js tools/helpers/*.js",
-    "test": "npx mocha --max-old-space-size=4096 ./test/*.test.js && npx mocha ./test/lib/*.test.js",
+    "eslint": "npx eslint test/** tools/*.js tools/**/*.js",
+    "test": "npx mocha --max-old-space-size=4096 ./test/*.test.js && npx mocha ./test/lib/*.test.js && npm run test:migrations",
+    "test:migrations": "npx mocha --max-old-space-size=4096 ./test/massive-migrations/*.test.js",
     "extend-circom": "node ./tools/reuse-compiled-circuits/reuse-circuits.js"
   },
   "keywords": [
