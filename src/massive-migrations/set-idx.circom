@@ -14,6 +14,8 @@ include "../lib/hash-state.circom"
  * @input balance - {Uint192} - balance
  * @input nonce - {Uint40} - nonce
  * @input idx - {Uint48} - merkle tree index
+ * @input exitBalance - {Uint192} - exitBalance
+ * @input accumulatedHash - {Field} - accumulatedHash
  * @input sign - {Bool} - babyjubjub sign
  * @input ay - {Field} babyjubjub y coordinate
  * @input siblingsState[nLevels + 1] - {Array(Field)} - siblings merkle proof
@@ -30,6 +32,8 @@ template SetIdx(nLevels) {
     signal private input balance;
     signal private input nonce;
     signal private input idx;
+    signal private input exitBalance;
+    signal private input accumulatedHash;
     signal private input sign;
     signal private input ay;
     signal private input siblingsState[nLevels + 1];
@@ -43,6 +47,8 @@ template SetIdx(nLevels) {
     accountState.balance <== balance;
     accountState.ay <== ay;
     accountState.ethAddr <== ethAddr;
+    accountState.exitBalance <== exitBalance;
+    accountState.accumulatedHash <== accumulatedHash;
 
     // verify account state is on state tree root
     ////////

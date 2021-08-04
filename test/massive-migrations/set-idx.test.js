@@ -14,7 +14,7 @@ describe("Test SetIdx", function () {
     let circuit;
 
     const NTX = 4;
-    const NLEVELS = 32;
+    const NLEVELS = 16;
 
     const input = {};
 
@@ -72,6 +72,8 @@ describe("Test SetIdx", function () {
         input.balance = tmpState.balance;
         input.nonce = tmpState.nonce;
         input.idx = tmpState.idx;
+        input.exitBalance = tmpState.exitBalance;
+        input.accumulatedHash = tmpState.accumulatedHash;
         input.sign = tmpState.sign;
         input.ay = Scalar.fromString(tmpState.ay, 16);
 
