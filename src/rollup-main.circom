@@ -54,8 +54,8 @@ include "./fee-tx.circom";
  * @input balance1[nTx] - {Array(Uint192)} - balance of the sender leaf
  * @input ay1[nTx] - {Array(Field)} - ay of the sender leaf
  * @input ethAddr1[nTx] - {Array(Uint160)} - ethAddr of the sender leaf
- * @input exitBalance1[nTx] - {Array(Uint192)} - account exit balance
- * @input accumulatedHash1[nTx] - {Array(Field)} - received transactions hash chain
+ * @input exitBalance1[nTx] - {Array(Uint192)} - exit balance of the sender leaf
+ * @input accumulatedHash1[nTx] - {Array(Field)} - received transactions hash chain of the sender leaf
  * @input siblings1[nTx][nLevels + 1] - {Array[Array(Field)]} - siblings merkle proof of the sender leaf
  * @input isOld0_1[nTx] - {Array(Bool)} - flag to require old key - value
  * @input oldKey1[nTx] - {Array(Uint48)} - old key of the sender leaf
@@ -66,8 +66,8 @@ include "./fee-tx.circom";
  * @input balance2[nTx] - {Array(Uint192)} - balance of the receiver leaf
  * @input ay2[nTx] - {Array(Field)} - ay of the receiver leaf
  * @input ethAddr2[nTx] - {Array(Uint160)} - ethAddr of the receiver leaf
- * @input exitBalance2[nTx] - {Array(Uint192)} - account exit balance
- * @input accumulatedHash2[nTx] - {Array(Field)} - received transactions hash chain
+ * @input exitBalance2[nTx] - {Array(Uint192)} - exit balance of the receiver leaf
+ * @input accumulatedHash2[nTx] - {Array(Field)} - received transactions hash chain of the receiver leaf
  * @input siblings2[nTx][nLevels + 1] - {Array[Array(Field)]} - siblings merkle proof of the receiver leaf
  * @input tokenID3[maxFeeTx] - {Array(Uint32)} - tokenID of leafs feeIdxs
  * @input nonce3[maxFeeTx] - {Array(Uint40)} - nonce of leafs feeIdxs
@@ -75,8 +75,8 @@ include "./fee-tx.circom";
  * @input balance3[maxFeeTx] - {Array(Uint192)} - balance of leafs feeIdxs
  * @input ay3[maxFeeTx] - {Array(Field)} - ay of leafs feeIdxs
  * @input ethAddr3[maxFeeTx] - {Array(Uint160)} - ethAddr of leafs feeIdxs
- * @input exitBalance3[nTx] - {Array(Uint192)} - account exit balance
- * @input accumulatedHash3[nTx] - {Array(Field)} - received transactions hash chain
+ * @input exitBalance3[maxFeeTx] - {Array(Uint192)} - exit balance of leafs feeIdxs
+ * @input accumulatedHash3[maxFeeTx] - {Array(Field)} - received transactions hash chain of leafs feeIdxs
  * @input siblings3[maxFeeTx][nLevels + 1] - {Array[Array(Field)}} - siblings merkle proof of leafs Idxs
  * @output hashGlobalInputs - {Field} - hash of all pretended input signals
  */
@@ -352,7 +352,7 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         rollupTx[i].exitBalance1 <== exitBalance1[i];
         rollupTx[i].accumulatedHash1 <== accumulatedHash1[i];
         for (j = 0; j < nLevels+1; j++) {
-            rollupTx[i].siblings1[j] <== siblings1[i][j]
+            rollupTx[i].siblings1[j] <== siblings1[i][j];
         }
         rollupTx[i].isOld0_1 <== isOld0_1[i];
         rollupTx[i].oldKey1 <== oldKey1[i];

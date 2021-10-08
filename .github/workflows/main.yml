@@ -5,9 +5,9 @@ name: Main CI
 
 on:
   push:
-    branches: [master, feature/upgrade-v1]
+    branches: [master, feature/massive-migrations]
   pull_request:
-    branches: [master, feature/upgrade-v1]
+    branches: [master, feature/massive-migrations]
 
 jobs:
   build:

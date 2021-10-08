@@ -72,7 +72,7 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     component n2bOldStateRoot = Num2Bits(256);
     n2bOldStateRoot.in <== oldStateRoot;
 
-    // newStateRoott
+    // newStateRoot
     component n2bNewStateRoot = Num2Bits(256);
     n2bNewStateRoot.in <== newStateRoot;
 
