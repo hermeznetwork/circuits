@@ -179,7 +179,6 @@ async function printBatchOutputs(bb){
     console.log("BB newStateRoot: ", bb.getNewStateRoot());
     console.log("BB newExitRoot: ", bb.getNewExitRoot());
     console.log("BB L1FullTxsData: ", bb.getL1TxsFullData());
-    console.log("BB L2TxsData: ", bb.getL1L2TxsData());
     console.log("BB getFeeTxsData: ", bb.getFeeTxsData());
     console.log("BB chainID: ", bb.chainID);
     console.log("BB currentNumBatch: ", bb.currentNumBatch);

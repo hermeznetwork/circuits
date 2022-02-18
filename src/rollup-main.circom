@@ -447,22 +447,6 @@ template RollupMain(nTx, nLevels, maxL1Tx, maxFeeTx){
         }
     }
 
-    var bitsL1L2TxData = (2*nLevels + 40 + 8);
-    for (i = 0; i < nTx; i++){
-        // add fromIdx and toIdx
-        for (j = 0; j < 2*nLevels; j++ ){
-            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j];
-        }
-        // add amountF
-        for (j = 2*nLevels; j < (2*nLevels + 40); j++ ){
-            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j] * (1 - rollupTx[i].isAmountNullified);
-        }
-        // add fee
-        for (j = (2*nLevels + 40); j < (2*nLevels + 40 + 8); j++ ){
-            hasherInputs.L1L2TxsData[i*bitsL1L2TxData + j] <== decodeTx[i].L1L2TxData[j];
-        }
-    }
-
     for (i = 0; i < maxFeeTx; i++){
         hasherInputs.feeTxsData[i] <== feeIdxs[i];
     }

@@ -28,7 +28,6 @@ include "./lib/decode-float.circom";
  * @input auxFromIdx - {Uint48} - auxiliary index to create accounts
  * @input auxToIdx - {Uint48} - auxiliary index when signed index receiver is set to null
  * @input inIdx  - {Uint48} - old last index assigned
- * @output L1L2TxData[nLevels*2 + 40 + 8] - {Array[Bool]} - L1-L2 data availability
  * @output txCompressedDataV2 - {Uint193} - encode transaction fields together version 2
  * @output L1TxFullData - {Array[Bool]} - L1 full data
  * @output outIdx - {Uint48} - new last index assigned
@@ -54,7 +53,6 @@ template DecodeTx(nLevels) {
     signal input rqToBjjAy;
 
     // fromIdx | toIdx | amountF | userFee
-    signal output L1L2TxData[nLevels*2 + 40 + 8];
     signal output txCompressedDataV2;
 
     // tx L1 fields
@@ -210,41 +208,6 @@ template DecodeTx(nLevels) {
     b2nTxCompressedDataV2.in[48 + 48 + 40 + 32 + 40 + 8] <== n2bData.out[224];
 
     b2nTxCompressedDataV2.out ==> txCompressedDataV2;
-
-    // Build L1L2TxData
-    ////////
-    // select finalIdx
-    // if user signs 'toIdx == 0', then idx receiver would be freely chosen
-    // by the coordinator and it is set on 'auxToIdx'.
-    // 'auxToIdx' would be the receiver and it would be added to data availability
-    // ineatd of `toIdx`
-    component toIdxIsZero = IsZero();
-    toIdxIsZero.in <== toIdx;
-
-    component selectToIdx = Mux1();
-    selectToIdx.c[0] <== toIdx;
-    selectToIdx.c[1] <== auxToIdx;
-    selectToIdx.s <== (1-onChain)*toIdxIsZero.out;
-
-    component n2bFinalToIdx = Num2Bits(nLevels);
-    n2bFinalToIdx.in <== selectToIdx.out;
-
-    // Add fromIdx
-    for (i = 0; i < nLevels; i++) {
-        L1L2TxData[nLevels - 1 - i] <== n2bData.out[48 + i];
-    }
-    // Add toIdx
-    for (i = 0; i < nLevels; i++) {
-        L1L2TxData[nLevels*2 - 1 - i] <== n2bFinalToIdx.out[i];
-    }
-    // Add amountF
-    for (i = 0; i < 40; i++) {
-        L1L2TxData[nLevels*2 + 40 - 1 - i] <== n2bAmount.out[i];
-    }
-    // Add fee
-    for (i = 0; i < 8; i++) {
-        L1L2TxData[nLevels*2 + 40 + 8 - 1 - i] <== n2bData.out[216 + i]*(1-onChain);
-    }
 
     // Build sigL2Hash
     ////////
