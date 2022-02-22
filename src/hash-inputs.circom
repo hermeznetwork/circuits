@@ -14,7 +14,6 @@ include "../node_modules/circomlib/circuits/bitify.circom";
  * @input newStateRoot - {Field} - new state root
  * @input newExitRoot - {Field} - new exit root
  * @input L1TxsFullData[maxL1Tx * (2*nLevels + 32 + 16 + 16 + 256 + 160)] - {Array[Bool]} - bits L1 full data
- * @input L1L2TxsData[nTx * (2*nLevels + 16 + 8)]	- {Array[Bool]} - bits L1-L2 transaction data-availability
  * @input feeTxsData[maxFeeTx] - {Array[Uint48]} - all index accounts to receive accumulated fees
  * @input globalChainID	- {Uint16} - global chain identifier
  * @input currentNumBatch - {Uint32} - current batch number processed
@@ -28,7 +27,6 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     var bitsChainID = 16;
     var bitsCurrentNumBatch = 32;
     var bitsL1TxsFullData = maxL1Tx * (2*bitsIndexMax + 32 + 40 + 40 + 256 + 160);
-    var bitsL1L2TxsData = nTx * (2*nLevels + 40 + 8);
     var bitsFeeTxsData = maxFeeTx * bitsIndex;
 
     // inputs
@@ -38,7 +36,6 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
     signal input newStateRoot;
     signal input newExitRoot;
     signal input L1TxsFullData[bitsL1TxsFullData]; // already in bits
-    signal input L1L2TxsData[bitsL1L2TxsData]; // already in bits
     signal input feeTxsData[maxFeeTx]; // array of merkle tree indexes
     signal input globalChainID;
     signal input currentNumBatch;
@@ -108,7 +105,7 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
 
     // build SHA256 with all inputs
     ////////
-    var totalBitsSha256 = 2*bitsIndexMax + 3*bitsRoots + bitsChainID + bitsCurrentNumBatch + bitsL1TxsFullData + bitsL1L2TxsData + bitsFeeTxsData;
+    var totalBitsSha256 = 2*bitsIndexMax + 3*bitsRoots + bitsChainID + bitsCurrentNumBatch + bitsL1TxsFullData + bitsFeeTxsData;
 
     component inputsHasher = Sha256(totalBitsSha256);
 
@@ -149,12 +146,6 @@ template HashInputs(nLevels, nTx, maxL1Tx, maxFeeTx) {
         inputsHasher.in[offset + i] <== L1TxsFullData[i];
     }
     offset = offset + bitsL1TxsFullData;
-
-    // add L1L2TxsData
-    for (i = 0; i < bitsL1L2TxsData; i++) {
-        inputsHasher.in[offset + i] <== L1L2TxsData[i];
-    }
-    offset = offset + bitsL1L2TxsData;
 
     // add feeTxData
     for (i = 0; i < maxFeeTx; i++){

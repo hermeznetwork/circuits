@@ -53,12 +53,6 @@ describe("Test hash-inputs", function () {
             L1TxsFullDataB.unshift(0);
         }
 
-        const L1L2TxsDataScalar = Scalar.fromString(bb.getL1L2TxsData(), 16);
-        const L1L2TxsDataB = Scalar.bits(L1L2TxsDataScalar);
-        while(L1L2TxsDataB.length < (nTx * bb.L1L2TxDataB)){
-            L1L2TxsDataB.unshift(0);
-        }
-
         const input = {
             oldLastIdx: bb.getOldLastIdx(),
             newLastIdx: bb.getNewLastIdx(),
@@ -66,7 +60,6 @@ describe("Test hash-inputs", function () {
             newStateRoot: bb.getNewStateRoot(),
             newExitRoot: bb.getNewExitRoot(),
             L1TxsFullData: L1TxsFullDataB,
-            L1L2TxsData: L1L2TxsDataB,
             feeTxsData: bb.input.feeIdxs,
             globalChainID: bb.chainID,
             currentNumBatch: bb.currentNumBatch,
@@ -120,12 +113,6 @@ describe("Test hash-inputs", function () {
             L1TxsDataB.unshift(0);
         }
 
-        const txsDataScalar = Scalar.fromString(bb.getL1L2TxsData(), 16);
-        const txsDataB = Scalar.bits(txsDataScalar).reverse();
-        while(txsDataB.length < (nTx * bb.L1L2TxDataB)){
-            txsDataB.unshift(0);
-        }
-
         const input = {
             oldLastIdx: bb.getOldLastIdx(),
             newLastIdx: bb.getNewLastIdx(),
@@ -133,7 +120,6 @@ describe("Test hash-inputs", function () {
             newStateRoot: bb.getNewStateRoot(),
             newExitRoot: bb.getNewExitRoot(),
             L1TxsFullData: L1TxsDataB,
-            L1L2TxsData: txsDataB,
             feeTxsData: bb.input.feeIdxs,
             globalChainID: bb.chainID,
             currentNumBatch: bb.currentNumBatch
